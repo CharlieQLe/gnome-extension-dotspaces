@@ -57,7 +57,7 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
         const isDynamicWorkspacesEnabled = this.mutterSettings.get_boolean('dynamic-workspaces');
 
         // Get the number of windows that are on all workspaces
-        let windowsOnAllWSCount = global.display.list_all_windows().filter(w => w.is_on_all_workspaces()).length;
+        let windowsOnAllWSCount = global.display.list_all_windows().filter(w => w.is_on_all_workspaces() && w.get_wm_class() !== "Gnome-shell").length;
 
         // Create dots
         for (let i = 0; i < this.workspace_count; i++) {

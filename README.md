@@ -24,6 +24,7 @@ After cloning the repository, simply log out and log back in and it should show 
 
 ## TO-DO
 
+* Refactor implementation to be more optimized (?)
 * Add a settings page
     * Add the option to hide the icons of non-active, occupied workspaces
     * Add the option to keep the Activities button
