@@ -57,12 +57,14 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
         const isDynamicWorkspacesEnabled = this.mutterSettings.get_boolean('dynamic-workspaces');
 
         // Get the number of windows that are on all workspaces
-        let windowsOnAllWSCount = global.display.list_all_windows().filter(w => w.is_on_all_workspaces());
+        let windowsOnAllWSCount = global.display.list_all_windows().filter(w => w.is_on_all_workspaces()).length;
 
         // Create dots
         for (let i = 0; i < this.workspace_count; i++) {
             // Check if this workspace is occupied by windows by getting the windows on a workspace then subtracting the windows that exist on all workspaces
-            let isOccupied = global.workspace_manager.get_workspace_by_index(i).list_windows().length - windowsOnAllWSCount > 0;
+            let count = global.workspace_manager.get_workspace_by_index(i).list_windows().length;
+            print(`\nCount is ${count}\nwindowsOnAllWSCount is ${windowsOnAllWSCount}\n`);
+            let isOccupied = count - windowsOnAllWSCount > 0;
 
             // Get if this is the dynamic workspace
             let isDynamic = isDynamicWorkspacesEnabled && i === this.workspace_count - 1;
