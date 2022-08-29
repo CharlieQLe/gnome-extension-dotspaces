@@ -14,13 +14,14 @@ At the moment, it has only been tested with GNOME 42.
 
 ## How do I install?
 
-Tar packages and an extension page are not available yet. However, the source can be used by cloning this repository like so:
+Tar packages and an extension page are not available yet. However, the source can be used by cloning this repository and running the install script like so:
 
 ```
-git clone https://github.com/CharlieQLe/dotspaces.git $HOME/.local/share/gnome-shell/extensions/dotspaces@charlieqle/
+git clone https://github.com/CharlieQLe/dotspaces.git
+sh install.sh
 ```
 
-After cloning the repository, simply log out and log back in and it should show up in the Extensions application!
+After the installation, simply log out and log back in and it should show up in the Extensions application!
 
 ## TO-DO
 
