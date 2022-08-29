@@ -25,7 +25,6 @@ After the installation, simply log out and log back in and it should show up in 
 
 ## TO-DO
 
-* Apply changes to settings without requiring a reload of the extension
 * Refactor implementation to be more optimized (?)
 * Rewrite in TypeScript (?)
 * Publish on [extensions.gnome.org](https://extensions.gnome.org/)
