@@ -6,7 +6,7 @@ A simple workspace indicator extension for the GNOME Desktop Environment. It dis
 
 This even allows switching workspaces by simply scrolling over the panel! This can be disabled in favor of simply scrolling over the set of workspaces itself.
 
-This does ***not*** and ***will not*** have drag-and-drog workspaces for workspace management without the overview. This is a **simple** way to see and switch between all of the workspaces.
+This does ***not*** and ***will not*** have drag-and-drop workspaces for workspace management without the overview. This is a **simple** way to see and switch between all of the workspaces.
 
 ## What versions of GNOME does DOTSPACES support?
 
