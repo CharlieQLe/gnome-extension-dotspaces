@@ -25,11 +25,8 @@ After the installation, simply log out and log back in and it should show up in 
 
 ## TO-DO
 
+* Apply changes to settings without requiring a reload of the extension
+* Use custom icons to avoid inconsistency across different icon sets
 * Refactor implementation to be more optimized (?)
-* Add a settings page
-    * Add the option to hide the icons of non-active, occupied workspaces
-    * Add the option to keep the Activities button
-    * Add the option to limit the workspace scrolling to the dotspaces container
-    * Add the option to use different icons
 * Rewrite in TypeScript (?)
 * Publish on [extensions.gnome.org](https://extensions.gnome.org/)

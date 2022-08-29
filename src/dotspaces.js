@@ -1,7 +1,11 @@
+'use strict';
+
 const { Clutter, Gio, GObject, St } = imports.gi;
+
 const Main = imports.ui.main;
-const Me = imports.misc.extensionUtils.getCurrentExtension();
-const { SignalHandler } = Me.imports.signal_handler;
+const ExtensionUtils = imports.misc.extensionUtils;
+const Me = ExtensionUtils.getCurrentExtension();
+const { SignalHandler } = Me.imports.signalHandler;
 
 var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.Button {
     static {
@@ -12,8 +16,9 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
         super._init(0.0, _('DotspaceContainer'));
         this.track_hover = false;
 
-        // Get Mutter settings
-        this.mutterSettings = new Gio.Settings({ schema: 'org.gnome.mutter' });
+        // Get settings
+        this._settings = ExtensionUtils.getSettings("org.gnome.shell.extensions.dotspaces");
+        this._mutterSettings = new Gio.Settings({ schema: 'org.gnome.mutter' });
 
         // Create the box to hold the dots 
 	    this.dots = new St.BoxLayout({});
@@ -22,9 +27,9 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
 
         // Connect events
         this._signalHandler = new SignalHandler(this); 
-        this._signalHandler.add_signal(global.workspace_manager, 'active-workspace-changed', this._update_dots);
-        this._signalHandler.add_signal(global.workspace_manager, 'notify::n-workspaces', this._update_dots);
-        this._signalHandler.add_signal(Main.panel, 'scroll-event', this._cycle_workspaces);
+        this._signalHandler.add_signal(global.workspace_manager, "active-workspace-changed", this._update_dots);
+        this._signalHandler.add_signal(global.workspace_manager, "notify::n-workspaces", this._update_dots);
+        this._signalHandler.add_signal(this._settings.get_boolean("panel-scroll") ? Main.panel : this, 'scroll-event', this._cycle_workspaces);
     }
 
     /*
@@ -50,17 +55,20 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
         let workspace_count = global.workspace_manager.get_n_workspaces();
 
         // Check if dynamic workspaces are enabled 
-        const isDynamicWorkspacesEnabled = this.mutterSettings.get_boolean('dynamic-workspaces');
+        const isDynamicWorkspacesEnabled = this._mutterSettings.get_boolean('dynamic-workspaces');
+
+        // Check if inactive occupied workspaces should be checked
+        const ignoreInactiveOccupiedWorkspaces = this._settings.get_boolean("ignore-inactive-occupied-workspaces");
 
         // Get the number of windows that are on all workspaces
-        let windowsOnAllWSCount = global.display.list_all_windows().filter(w => w.is_on_all_workspaces() && w.get_wm_class() !== "Gnome-shell").length;
+        let windowsOnAllWSCount = ignoreInactiveOccupiedWorkspaces ? 0 : global.display.list_all_windows().filter(w => w.is_on_all_workspaces() && w.get_wm_class() !== "Gnome-shell").length;
 
         // Create dots
         for (let i = 0; i < workspace_count; i++) {
             let workspace = global.workspace_manager.get_workspace_by_index(i);
 
             // Check if this workspace is occupied by windows by getting the windows on a workspace then subtracting the windows that exist on all workspaces
-            let isOccupied = workspace.list_windows().length - windowsOnAllWSCount > 0;
+            let isOccupied = !ignoreInactiveOccupiedWorkspaces && workspace.list_windows().length - windowsOnAllWSCount > 0;
 
             // Get if this is the dynamic workspace
             let isDynamic = isDynamicWorkspacesEnabled && i === workspace_count - 1;

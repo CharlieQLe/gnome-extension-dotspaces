@@ -1,3 +1,5 @@
+'use strict';
+
 /* extension.js
  *
  * This program is free software: you can redistribute it and/or modify
@@ -19,7 +21,8 @@
 /* exported init */
 
 const Main = imports.ui.main;
-const Me = imports.misc.extensionUtils.getCurrentExtension();
+const ExtensionUtils = imports.misc.extensionUtils;
+const Me = ExtensionUtils.getCurrentExtension();
 const Dotspaces = Me.imports.dotspaces;
 const Utils = Me.imports.utils;
 
@@ -30,12 +33,17 @@ class Extension {
 
     enable() {
         this._dotspaces = new Dotspaces.DotspaceContainer();
+        this._settings = ExtensionUtils.getSettings("org.gnome.shell.extensions.dotspaces");
 
         // Hide activities
-        Utils.showActivities(false);
+        let position = 1;
+        if (!this._settings.get_boolean('keep-activities')) {
+            Utils.showActivities(false);
+            position = 0;
+        }
 
-        // Add the workspaces to just after the activities button
-        Main.panel.addToStatusArea(this._uuid, this._dotspaces, 0, 'left');
+        // Add the workspaces to the left side of the panel
+        Main.panel.addToStatusArea(this._uuid, this._dotspaces, position, 'left');
     }
 
     disable() {

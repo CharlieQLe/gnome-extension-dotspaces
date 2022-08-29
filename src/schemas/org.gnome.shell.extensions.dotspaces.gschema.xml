@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+    <schema id="org.gnome.shell.extensions.dotspaces" path="/org/gnome/shell/extensions/dotspaces/">
+        <key name="ignore-inactive-occupied-workspaces" type="b">
+            <default>false</default>
+        </key>
+        <key name="keep-activities" type="b">
+            <default>false</default>
+        </key>
+        <key name="panel-scroll" type="b">
+            <default>true</default>
+        </key>
+    </schema>
+</schemalist>
