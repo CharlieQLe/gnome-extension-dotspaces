@@ -5,8 +5,8 @@ const { Clutter, Gio, GObject, St } = imports.gi;
 const Main = imports.ui.main;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
-const { SignalHandler } = Me.imports.signalHandler;
-const { IconHandler } = Me.imports.iconHandler;
+const { SignalHandler } = Me.imports.utils.signalHandler;
+const { IconHandler } = Me.imports.utils.iconHandler;
 
 var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.Button {
     static {

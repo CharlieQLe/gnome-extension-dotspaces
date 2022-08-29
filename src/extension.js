@@ -24,7 +24,7 @@ const Main = imports.ui.main;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const Dotspaces = Me.imports.dotspaces;
-const Utils = Me.imports.utils;
+const { toggle_activities } = Me.imports.utils.activitiesHandler;
 
 class Extension {
     constructor(uuid) {
@@ -39,7 +39,7 @@ class Extension {
         // Hide activities
         let position = 1;
         if (!this._settings.get_boolean('keep-activities')) {
-            Utils.showActivities(false);
+            toggle_activities(false);
             position = 0;
         }
 
@@ -51,7 +51,7 @@ class Extension {
         this._dotspaces.destroy();
         this._dotspaces = null;
         if (this._activities_signal) this._settings.disconnect(this._activities_signal);
-        Utils.showActivities(true);
+        toggle_activities(true);
     }
 }
 
