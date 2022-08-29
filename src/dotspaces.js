@@ -22,7 +22,6 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
 
         // Get setting values
         this._ignoreInactiveOccupiedWorkspaces = this._settings.get_boolean("ignore-inactive-occupied-workspaces");
-        this._panelScroll = this._settings.get_boolean("panel-scroll");
         this._dynamicWorkspaces = this._mutterSettings.get_boolean('dynamic-workspaces');
         
         // Create the icons
@@ -43,7 +42,7 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
         this._signalHandler.add_signal(this._settings, "changed::ignore-inactive-occupied-workspaces", this._changed_ignore_inactive_occupied_workspaces);
         this._signalHandler.add_signal(this._settings, "changed::panel-scroll", this._changed_panel_scroll);
         this._signalHandler.add_signal(this._mutterSettings, "changed::dynamic-workspaces", this._changed_dynamic_workspaces);
-        this._update_scroll();
+        this._update_scroll(this._settings.get_boolean("panel-scroll"));
     }
 
     /*
@@ -74,8 +73,7 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
      * @param {*} _ 
      */
      _changed_panel_scroll(_) {
-        this._panelScroll = this._settings.get_boolean("panel-scroll");
-        this._update_scroll();
+        this._update_scroll(this._settings.get_boolean("panel-scroll"));
     }
 
     /**
@@ -90,13 +88,15 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
 
     /**
      * Update the scroll signal.
+     * 
+     * @param {Boolean} usePanel
      */
-    _update_scroll() {
+    _update_scroll(usePanel) {
         if (this._scrollSignal) {
             this._signalHandler.remove_signal(this._scrollSignal);
             this._scrollSignal = null;
         }
-        this._scrollSignal = this._signalHandler.add_signal(this._panelScroll ? Main.panel : this, 'scroll-event', this._cycle_workspaces);
+        this._scrollSignal = this._signalHandler.add_signal(usePanel ? Main.panel : this, 'scroll-event', this._cycle_workspaces);
     }
     
     /*
