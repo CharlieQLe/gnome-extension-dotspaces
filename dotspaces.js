@@ -1,5 +1,7 @@
 const { Clutter, Gio, GObject, St } = imports.gi;
 const Main = imports.ui.main;
+const Me = imports.misc.extensionUtils.getCurrentExtension();
+const { SignalHandler } = Me.imports.signal_handler;
 
 var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.Button {
     static {
@@ -17,23 +19,20 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
 	    this.dots = new St.BoxLayout({});
         this.add_child(this.dots);
 	    this._update_dots();
-        this._active_workspace_changed = global.workspace_manager.connect('active-workspace-changed', this._update_dots.bind(this));
-        this._workspace_number_changed = global.workspace_manager.connect('notify::n-workspaces', this._update_dots.bind(this));
-        
-        // Connect input
-        this._workspace_scroll = Main.panel.connect('scroll-event', this._cycle_workspaces.bind(this));
+
+        // Connect events
+        this._signalHandler = new SignalHandler(this); 
+        this._signalHandler.add_signal(global.workspace_manager, 'active-workspace-changed', this._update_dots);
+        this._signalHandler.add_signal(global.workspace_manager, 'notify::n-workspaces', this._update_dots);
+        this._signalHandler.add_signal(Main.panel, 'scroll-event', this._cycle_workspaces);
     }
 
     /*
-     *
      * Handle destroy.
-     *
      */
     destroy() {
         // Disconnect events
-        if (this._ws_active_changed) global.workspace_manager.disconnect(this._ws_active_changed);
-        if (this._workspace_number_changed) global.workspace_manager.disconnect(this._workspace_number_changed);
-        if (this._workspace_scroll) Main.panel.disconnect(this._workspace_scroll);
+        this._signalHandler.clear_signals()
 
         // Destroy
         this.dots.destroy();
@@ -41,17 +40,14 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
     }
 
     /*
-     *
      * Update the dot indicators.
-     *
      */
     _update_dots() {
         // Destroy all dots
         this.dots.destroy_all_children();
 
         // Update workspace information
-        this.workspace_count = global.workspace_manager.get_n_workspaces();
-        this.active_workspace_index = global.workspace_manager.get_active_workspace_index();
+        let workspace_count = global.workspace_manager.get_n_workspaces();
 
         // Check if dynamic workspaces are enabled 
         const isDynamicWorkspacesEnabled = this.mutterSettings.get_boolean('dynamic-workspaces');
@@ -60,18 +56,15 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
         let windowsOnAllWSCount = global.display.list_all_windows().filter(w => w.is_on_all_workspaces() && w.get_wm_class() !== "Gnome-shell").length;
 
         // Create dots
-        for (let i = 0; i < this.workspace_count; i++) {
+        for (let i = 0; i < workspace_count; i++) {
+            let workspace = global.workspace_manager.get_workspace_by_index(i);
+
             // Check if this workspace is occupied by windows by getting the windows on a workspace then subtracting the windows that exist on all workspaces
-            let count = global.workspace_manager.get_workspace_by_index(i).list_windows().length;
-            print(`\nCount is ${count}\nwindowsOnAllWSCount is ${windowsOnAllWSCount}\n`);
-            let isOccupied = count - windowsOnAllWSCount > 0;
+            let isOccupied = workspace.list_windows().length - windowsOnAllWSCount > 0;
 
             // Get if this is the dynamic workspace
-            let isDynamic = isDynamicWorkspacesEnabled && i === this.workspace_count - 1;
+            let isDynamic = isDynamicWorkspacesEnabled && i === workspace_count - 1;
             
-            // Get if this is the active workspace
-            let isActive = this.active_workspace_index === i;
-
             // Create the new workspace indicator
             let dotsContainer = new St.Bin({ visible: true, reactive: true, can_focus: false, track_hover: false });
             
@@ -83,7 +76,7 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
             let icon_size = 14;
 
             // Handle the active state
-            if (isActive) {
+            if (workspace.active) {
                 dotsContainer.add_style_class_name("active");
                 icon_name = "media-record-symbolic";
                 icon_size = 16;
@@ -100,7 +93,7 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
             if (isDynamic) {
                 dotsContainer.add_style_class_name("dynamic");
                 icon_name = "list-add-symbolic";
-                icon_size = isActive ? 12 : 8;
+                icon_size = workspace.active ? 12 : 8;
             }
 
             // Create the icon
@@ -112,33 +105,35 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
         }
     }
 
-    /*
-     *
+    /**
      * Change the workspace to the workspace of the specified index.
-     *
+     * 
+     * @param {Number} index 
      */
     _change_workspace(index) {
         global.workspace_manager.get_workspace_by_index(index).activate(global.get_current_time());
     }
 
-    /*
-     *
-     * Cycle through workspaces with the scroll wheel
-     *
+    /**
+     * Handles cycling through workspaces with the scroll-wheel.
+     * 
+     * @param {*} _ 
+     * @param {Clutter.Event} event 
      */
     _cycle_workspaces(_, event) {
         // Increment or decrement the index
-        let index = this.active_workspace_index;
+        let index = global.workspace_manager.get_active_workspace_index();
         switch (event.get_scroll_direction()) {
             case Clutter.ScrollDirection.UP: index--; break;
             case Clutter.ScrollDirection.DOWN: index++; break;
         }
 
         // Modulo division to wrap the workspace index
-        index %= this.workspace_count;
-        if (index < 0) index += this.workspace_count;
+        let workspace_count = global.workspace_manager.get_n_workspaces();
+        index %= workspace_count;
+        if (index < 0) index += workspace_count;
 
         // Change the workspace
-        if (index >= 0 && index < this.workspace_count) this._change_workspace(index);
+        if (index >= 0 && index < workspace_count) this._change_workspace(index);
     }
 }
