@@ -39,9 +39,15 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
         this._signalHandler = new SignalHandler(this); 
         this._signalHandler.add_signal(global.workspace_manager, "active-workspace-changed", this._update_dots);
         this._signalHandler.add_signal(global.workspace_manager, "notify::n-workspaces", this._update_dots);
-        this._signalHandler.add_signal(this._settings, "changed::ignore-inactive-occupied-workspaces", this._changed_ignore_inactive_occupied_workspaces);
-        this._signalHandler.add_signal(this._settings, "changed::panel-scroll", this._changed_panel_scroll);
-        this._signalHandler.add_signal(this._mutterSettings, "changed::dynamic-workspaces", this._changed_dynamic_workspaces);
+        this._signalHandler.add_signal(this._settings, "changed::ignore-inactive-occupied-workspaces", _ => {
+            this._ignoreInactiveOccupiedWorkspaces = this._settings.get_boolean("ignore-inactive-occupied-workspaces");
+            this._update_dots();
+        });
+        this._signalHandler.add_signal(this._settings, "changed::panel-scroll", _ => this._update_scroll(this._settings.get_boolean("panel-scroll")));
+        this._signalHandler.add_signal(this._mutterSettings, "changed::dynamic-workspaces", _ => {
+            this._dynamicWorkspaces = this._mutterSettings.get_boolean("dynamic-workspaces");
+            this._update_dots();
+        });
         this._update_scroll(this._settings.get_boolean("panel-scroll"));
     }
 
@@ -58,45 +64,34 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
     }
 
     /**
-     * Update visibility of the dots when 'ignore-inactive-occupied-workspaces' is changed.
-     * 
-     * @param {*} _
-     */
-    _changed_ignore_inactive_occupied_workspaces(_) {
-        this._ignoreInactiveOccupiedWorkspaces = this._settings.get_boolean("ignore-inactive-occupied-workspaces");
-        this._update_dots();
-    }
-
-    /**
-     * Update the scroll signal.
-     * 
-     * @param {*} _ 
-     */
-     _changed_panel_scroll(_) {
-        this._update_scroll(this._settings.get_boolean("panel-scroll"));
-    }
-
-    /**
-     * Update the visibility of the dots when dynamic workspaces are toggled.
-     * 
-     * @param {*} _ 
-     */
-    _changed_dynamic_workspaces(_) {
-        this._dynamicWorkspaces = this._mutterSettings.get_boolean("dynamic-workspaces");
-        this._update_dots();
-    }
-
-    /**
      * Update the scroll signal.
      * 
      * @param {Boolean} usePanel
      */
     _update_scroll(usePanel) {
+        // Remove the existing scroll signal if it exists
         if (this._scrollSignal) {
             this._signalHandler.remove_signal(this._scrollSignal);
             this._scrollSignal = null;
         }
-        this._scrollSignal = this._signalHandler.add_signal(usePanel ? Main.panel : this, 'scroll-event', this._cycle_workspaces);
+
+        // Add the scroll signal to the panel or this
+        this._scrollSignal = this._signalHandler.add_signal(usePanel ? Main.panel : this, 'scroll-event', (_, event) => {
+            // Increment or decrement the index
+            let index = global.workspace_manager.get_active_workspace_index();
+            switch (event.get_scroll_direction()) {
+                case Clutter.ScrollDirection.UP: index--; break;
+                case Clutter.ScrollDirection.DOWN: index++; break;
+            }
+    
+            // Modulo division to wrap the workspace index
+            let workspace_count = global.workspace_manager.get_n_workspaces();
+            index %= workspace_count;
+            if (index < 0) index += workspace_count;
+    
+            // Change the workspace
+            if (index >= 0 && index < workspace_count) this._change_workspace(index);
+        });
     }
     
     /*
@@ -168,28 +163,5 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
      */
     _change_workspace(index) {
         global.workspace_manager.get_workspace_by_index(index).activate(global.get_current_time());
-    }
-
-    /**
-     * Handles cycling through workspaces with the scroll-wheel.
-     * 
-     * @param {*} _ 
-     * @param {Clutter.Event} event 
-     */
-    _cycle_workspaces(_, event) {
-        // Increment or decrement the index
-        let index = global.workspace_manager.get_active_workspace_index();
-        switch (event.get_scroll_direction()) {
-            case Clutter.ScrollDirection.UP: index--; break;
-            case Clutter.ScrollDirection.DOWN: index++; break;
-        }
-
-        // Modulo division to wrap the workspace index
-        let workspace_count = global.workspace_manager.get_n_workspaces();
-        index %= workspace_count;
-        if (index < 0) index += workspace_count;
-
-        // Change the workspace
-        if (index >= 0 && index < workspace_count) this._change_workspace(index);
     }
 }
