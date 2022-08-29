@@ -30,4 +30,5 @@ After cloning the repository, simply log out and log back in and it should show 
     * Add the option to keep the Activities button
     * Add the option to limit the workspace scrolling to the dotspaces container
     * Add the option to use different icons
+* Rewrite in TypeScript (?)
 * Publish on [extensions.gnome.org](https://extensions.gnome.org/)
