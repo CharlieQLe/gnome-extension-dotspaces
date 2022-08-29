@@ -6,6 +6,7 @@ const Main = imports.ui.main;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const { SignalHandler } = Me.imports.signalHandler;
+const { IconHandler } = Me.imports.iconHandler;
 
 var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.Button {
     static {
@@ -25,10 +26,11 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
         this._dynamicWorkspaces = this._mutterSettings.get_boolean('dynamic-workspaces');
         
         // Create the icons
-        this.iconActive = Gio.icon_new_for_string(`${Me.path}/icons/active-symbolic.svg`);
-        this.iconInactiveOccupied = Gio.icon_new_for_string(`${Me.path}/icons/inactive-occupied-symbolic.svg`);
-        this.iconInactiveUnoccupied = Gio.icon_new_for_string(`${Me.path}/icons/inactive-unoccupied-symbolic.svg`);
-        this.iconDynamic = Gio.icon_new_for_string(`${Me.path}/icons/dynamic-symbolic.svg`);
+        this._icons = new IconHandler();
+        this._icons.add_icon("active", `${Me.path}/icons/active-symbolic.svg`);
+        this._icons.add_icon("inactive-occupied", `${Me.path}/icons/inactive-occupied-symbolic.svg`);
+        this._icons.add_icon("inactive-unoccupied", `${Me.path}/icons/inactive-unoccupied-symbolic.svg`);
+        this._icons.add_icon("dynamic", `${Me.path}/icons/dynamic-symbolic.svg`);
 
         // Create the box to hold the dots 
 	    this.dots = new St.BoxLayout({});
@@ -58,6 +60,9 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
         // Disconnect events
         this._signalHandler.clear_signals()
 
+        // Remove all icons
+        this._icons.delete_all_icons();
+
         // Destroy
         this.dots.destroy();
         super.destroy();
@@ -70,10 +75,7 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
      */
     _update_scroll(usePanel) {
         // Remove the existing scroll signal if it exists
-        if (this._scrollSignal) {
-            this._signalHandler.remove_signal(this._scrollSignal);
-            this._scrollSignal = null;
-        }
+        if (this._scrollSignal) this._signalHandler.remove_signal(this._scrollSignal);
 
         // Add the scroll signal to the panel or this
         this._scrollSignal = this._signalHandler.add_signal(usePanel ? Main.panel : this, 'scroll-event', (_, event) => {
@@ -90,7 +92,7 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
             if (index < 0) index += workspace_count;
     
             // Change the workspace
-            if (index >= 0 && index < workspace_count) this._change_workspace(index);
+            if (index >= 0 && index < workspace_count) global.workspace_manager.get_workspace_by_index(index).activate(global.get_current_time());
         });
     }
     
@@ -109,6 +111,7 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
 
         // Create dots
         for (let i = 0; i < workspace_count; i++) {
+            // Get the current workspace
             let workspace = global.workspace_manager.get_workspace_by_index(i);
 
             // Check if this workspace is occupied by windows by getting the windows on a workspace then subtracting the windows that exist on all workspaces
@@ -124,20 +127,18 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
             dotsContainer.add_style_class_name("dotspaces-indicator");
 
             // Default icon name and size
-            let gicon = this.iconInactiveUnoccupied;
+            let gicon = this._icons.get_icon("inactive-unoccupied");
             let icon_size = 14;
 
             // Handle the active state
             if (workspace.active) {
                 dotsContainer.add_style_class_name("active");
-                gicon = this.iconActive;
+                gicon = this._icons.get_icon("active");
                 dotsContainer.connect('button-release-event', () => Main.overview.show());
             } else {
-                if (isOccupied) {
-                    gicon = this.iconInactiveOccupied;
-                }
+                if (isOccupied) gicon = this._icons.get_icon("inactive-occupied");
                 dotsContainer.track_hover = true;
-                dotsContainer.connect('button-release-event', () => this._change_workspace(i));
+                dotsContainer.connect('button-release-event', () => workspace.activate(global.get_current_time()));
             }
 
             // Handle the dynamic state
@@ -154,14 +155,5 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
             // Add actor
             this.dots.add_actor(dotsContainer);
         }
-    }
-
-    /**
-     * Change the workspace to the workspace of the specified index.
-     * 
-     * @param {Number} index 
-     */
-    _change_workspace(index) {
-        global.workspace_manager.get_workspace_by_index(index).activate(global.get_current_time());
     }
 }

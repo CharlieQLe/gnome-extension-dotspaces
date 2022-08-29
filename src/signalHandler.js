@@ -48,9 +48,7 @@ var SignalHandler = class SignalHandler {
      */
     remove_signal(signal) {
         let index = this._signals.indexOf(signal);
-        if (index < 0) {
-            return false;
-        }
+        if (index < 0) return false;
         this._signals.splice(index, 1)[0].disconnect();
         return true;
     }

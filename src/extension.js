@@ -50,9 +50,7 @@ class Extension {
     disable() {
         this._dotspaces.destroy();
         this._dotspaces = null;
-        if (this._activities_signal) {
-            this._settings.disconnect(this._activities_signal);
-        }
+        if (this._activities_signal) this._settings.disconnect(this._activities_signal);
         Utils.showActivities(true);
     }
 }
