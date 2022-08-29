@@ -20,6 +20,13 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
         this._settings = ExtensionUtils.getSettings("org.gnome.shell.extensions.dotspaces");
         this._mutterSettings = new Gio.Settings({ schema: 'org.gnome.mutter' });
 
+        // Create the icons
+        this.iconActive = Gio.icon_new_for_string(`${Me.path}/icons/active-symbolic.svg`);
+        this.iconInactiveOccupied = Gio.icon_new_for_string(`${Me.path}/icons/inactive-occupied-symbolic.svg`);
+        this.iconInactiveUnoccupied = Gio.icon_new_for_string(`${Me.path}/icons/inactive-unoccupied-symbolic.svg`);
+        this.iconDynamic = Gio.icon_new_for_string(`${Me.path}/icons/dynamic-symbolic.svg`);
+
+
         // Create the box to hold the dots 
 	    this.dots = new St.BoxLayout({});
         this.add_child(this.dots);
@@ -80,18 +87,17 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
             dotsContainer.add_style_class_name("dotspaces-indicator");
 
             // Default icon name and size
-            let icon_name = "radio-symbolic";
+            let gicon = this.iconInactiveUnoccupied;
             let icon_size = 14;
 
             // Handle the active state
             if (workspace.active) {
                 dotsContainer.add_style_class_name("active");
-                icon_name = "media-record-symbolic";
-                icon_size = 16;
+                gicon = this.iconActive;
                 dotsContainer.connect('button-release-event', () => Main.overview.show());
             } else {
                 if (isOccupied) {
-                    icon_name = "radio-checked-symbolic";
+                    gicon = this.iconInactiveOccupied;
                 }
                 dotsContainer.track_hover = true;
                 dotsContainer.connect('button-release-event', () => this._change_workspace(i));
@@ -100,12 +106,12 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
             // Handle the dynamic state
             if (isDynamic) {
                 dotsContainer.add_style_class_name("dynamic");
-                icon_name = "list-add-symbolic";
+                gicon = this.iconDynamic;
                 icon_size = workspace.active ? 12 : 8;
             }
 
             // Create the icon
-            dotsContainer.icon = new St.Icon({ icon_name: icon_name, icon_size: icon_size });
+            dotsContainer.icon = new St.Icon({ gicon: gicon, icon_size: icon_size });
 	        dotsContainer.set_child(dotsContainer.icon);
 
             // Add actor

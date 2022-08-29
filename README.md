@@ -2,11 +2,11 @@
 
 ## What is this?
 
-A simple workspace indicator extension for the GNOME Desktop Environment. It displays each workspace as a dot. Empty workspaces are represented by the unselected radio button icon (```radio-symbolic```), the current workspace is represented as a dot (```media-record-symbolic```), and occupied but non-active workspaces are represented as a selected radio button (```radio-checked-symbolic```). These icons are based off of the stock GNOME 42 icons, other icons have *not been tested*.
+A simple workspace indicator extension for the GNOME Desktop Environment. It displays each workspace as a dot. Empty workspaces are represented as a ring, the current workspace is represented as a filled circle, and occupied but non-active workspaces are represented as a ring with a dot in the center. If dynamic workspaces are enabled, the last workspace is represented as a plus.
 
-This even allows switching workspaces by simply scrolling over the panel! This likely conflicts with other extensions that also use the scroll wheel on the panel for other functions, so it is recommended to 
+This even allows switching workspaces by simply scrolling over the panel! This can be disabled in favor of simply scrolling over the set of workspaces itself.
 
-This does ***not*** have drag-and-drog workspaces for workspace management without the overview. This is a simple way to see the number of work
+This does ***not*** and ***will not*** have drag-and-drog workspaces for workspace management without the overview. This is a **simple** way to see and switch between all of the workspaces.
 
 ## What versions of GNOME does DOTSPACES support?
 
