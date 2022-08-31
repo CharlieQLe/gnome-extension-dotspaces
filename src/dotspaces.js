@@ -18,12 +18,12 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
         this.track_hover = false;
 
         // Get settings
-        this._settings = ExtensionUtils.getSettings("org.gnome.shell.extensions.dotspaces");
-        this._mutterSettings = new Gio.Settings({ schema: 'org.gnome.mutter' });
+        const settings = ExtensionUtils.getSettings("org.gnome.shell.extensions.dotspaces");
+        const mutterSettings = new Gio.Settings({ schema: 'org.gnome.mutter' });
 
         // Get setting values
-        this._ignoreInactiveOccupiedWorkspaces = this._settings.get_boolean("ignore-inactive-occupied-workspaces");
-        this._dynamicWorkspaces = this._mutterSettings.get_boolean('dynamic-workspaces');
+        this._ignoreInactiveOccupiedWorkspaces = settings.get_boolean("ignore-inactive-occupied-workspaces");
+        this._dynamicWorkspaces = mutterSettings.get_boolean('dynamic-workspaces');
         
         // Create the icons
         this._icons = new IconHandler();
@@ -41,16 +41,16 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
         this._signalHandler = new SignalHandler(this); 
         this._signalHandler.add_signal(global.workspace_manager, "active-workspace-changed", this._update_dots);
         this._signalHandler.add_signal(global.workspace_manager, "notify::n-workspaces", this._update_dots);
-        this._signalHandler.add_signal(this._settings, "changed::ignore-inactive-occupied-workspaces", _ => {
-            this._ignoreInactiveOccupiedWorkspaces = this._settings.get_boolean("ignore-inactive-occupied-workspaces");
+        this._signalHandler.add_signal(settings, "changed::ignore-inactive-occupied-workspaces", _ => {
+            this._ignoreInactiveOccupiedWorkspaces = settings.get_boolean("ignore-inactive-occupied-workspaces");
             this._update_dots();
         });
-        this._signalHandler.add_signal(this._settings, "changed::panel-scroll", _ => this._update_scroll(this._settings.get_boolean("panel-scroll")));
-        this._signalHandler.add_signal(this._mutterSettings, "changed::dynamic-workspaces", _ => {
-            this._dynamicWorkspaces = this._mutterSettings.get_boolean("dynamic-workspaces");
+        this._signalHandler.add_signal(settings, "changed::panel-scroll", _ => this._update_scroll(settings.get_boolean("panel-scroll")));
+        this._signalHandler.add_signal(mutterSettings, "changed::dynamic-workspaces", _ => {
+            this._dynamicWorkspaces = mutterSettings.get_boolean("dynamic-workspaces");
             this._update_dots();
         });
-        this._update_scroll(this._settings.get_boolean("panel-scroll"));
+        this._update_scroll(settings.get_boolean("panel-scroll"));
     }
 
     /*
@@ -121,7 +121,7 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
             let isDynamic = this._dynamicWorkspaces && i === workspace_count - 1;
             
             // Create the new workspace indicator
-            let dotsContainer = new St.Bin({ visible: true, reactive: true, can_focus: false, track_hover: false });
+            let dotsContainer = new St.Bin({ visible: true, reactive: true, can_focus: false, track_hover: true });
             
             // Add the style class
             dotsContainer.add_style_class_name("dotspaces-indicator");
@@ -132,12 +132,20 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
 
             // Handle the active state
             if (workspace.active) {
+                // Add the style class and set the icon
                 dotsContainer.add_style_class_name("active");
                 gicon = this._icons.get_icon("active");
-                dotsContainer.connect('button-release-event', () => Main.overview.show());
+
+                // Toggle the overview on clicking the active workspace
+                dotsContainer.connect('button-release-event', () => {
+                    if (Main.overview._visible) Main.overview.hide();
+                    else Main.overview.show();
+                });
             } else {
+                // Set the icon if this workspace is occupied
                 if (isOccupied) gicon = this._icons.get_icon("inactive-occupied");
-                dotsContainer.track_hover = true;
+                
+                // Change workspace on clicking the desired workspace
                 dotsContainer.connect('button-release-event', () => workspace.activate(global.get_current_time()));
             }
 

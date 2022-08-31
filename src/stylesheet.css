@@ -3,7 +3,9 @@
   margin-right: 5px;
 }
 
-.dotspaces-indicator:hover { color: lightgray; }
+.dotspaces-indicator:hover {
+  color: gray; 
+}
 
 .dotspaces-indicator.dynamic {
   margin-left: 8px;
