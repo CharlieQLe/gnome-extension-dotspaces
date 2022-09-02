@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+    <object class="AdwPreferencesPage" id="general">
+        <child>
+            <object class="AdwPreferencesGroup">
+                <child>
+                    <object class="AdwActionRow">
+                        <property name="title">Ignore Inactive Occupied Workspaces</property>
+                        <property name="activatable-widget">ignore_inactive_occupied_workspaces</property>
+                        <child>
+                            <object class="GtkSwitch" id="ignore_inactive_occupied_workspaces">
+                                <property name="valign">center</property>
+                            </object>
+                        </child>
+                    </object>
+                </child>
+                <child>
+                    <object class="AdwActionRow">
+                        <property name="title">Keep Activities</property>
+                        <property name="activatable-widget">keep_activities</property>
+                        <child>
+                            <object class="GtkSwitch" id="keep_activities">
+                                <property name="valign">center</property>
+                            </object>
+                        </child>
+                    </object>
+                </child>
+                <child>
+                    <object class="AdwActionRow">
+                        <property name="title">Switch Workspaces By Panel Scroll</property>
+                        <property name="activatable-widget">panel_scroll</property>
+                        <child>
+                            <object class="GtkSwitch" id="panel_scroll">
+                                <property name="valign">center</property>
+                            </object>
+                        </child>
+                    </object>
+                </child>
+            </object>
+        </child>
+    </object>
+</interface>

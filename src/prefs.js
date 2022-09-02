@@ -3,6 +3,8 @@
 const { Adw, Gio, GLib, Gtk } = imports.gi;
 
 const ExtensionUtils = imports.misc.extensionUtils;
+const Me = ExtensionUtils.getCurrentExtension();
+const { Settings } = Me.imports.constants;
 
 /**
  * Like `extension.js` this is used for any one-time setup like translations.
@@ -21,27 +23,18 @@ function init(meta) { }
  * @param {Adw.PreferencesWindow} window - The preferences window
  */
 function fillPreferencesWindow(window) {
-    const _settings = ExtensionUtils.getSettings("org.gnome.shell.extensions.dotspaces");
+    const settings = ExtensionUtils.getSettings("org.gnome.shell.extensions.dotspaces");
+    const builder = new Gtk.Builder();
     
-    const page = new Adw.PreferencesPage();
-    const group = new Adw.PreferencesGroup();
-    page.add(group);
+    // Add the ui file
+    builder.add_from_file(`${Me.path}/ui/main.xml`);
+    
+    // Add the general settings
+    window.add(builder.get_object('general'));
 
-    group.add(_createToggleRow(_settings, "Ignore Inactive Occupied Workspaces", "ignore-inactive-occupied-workspaces"));
-    group.add(_createToggleRow(_settings, "Keep Activities", "keep-activities"));
-    group.add(_createToggleRow(_settings, "Switch Workspaces By Panel Scroll", "panel-scroll"));
-
-    window.add(page);
-}
-
-function _createToggleRow(settings, title, setting_name) {
-    const row = new Adw.ActionRow({ title: title });
-    const toggle = new Gtk.Switch({
-        active: settings.get_boolean(setting_name),
-        valign: Gtk.Align.CENTER,
-    })
-    settings.bind(setting_name, toggle, 'active', Gio.SettingsBindFlags.DEFAULT);
-    row.add_suffix(toggle);
-    row.activatable_widget = toggle;
-    return row;
+    // Bind settings to switches
+    Settings.ALL_TOGGLES.forEach(key => {
+        const widget = builder.get_object(key.replaceAll('-', '_'));
+        settings.bind(key, widget, 'active', Gio.SettingsBindFlags.DEFAULT);
+    });
 }

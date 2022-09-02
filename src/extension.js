@@ -34,7 +34,7 @@ class Extension {
     enable() {
         this._dotspaces = new Dotspaces.DotspaceContainer();
         this._settings = ExtensionUtils.getSettings("org.gnome.shell.extensions.dotspaces");
-        this._activities_signal = this._settings.connect("changed::keep-activities", _ => Utils.showActivities(this._settings.get_boolean("keep-activities")));
+        this._activities_signal = this._settings.connect("changed::keep-activities", _ => toggle_activities(this._settings.get_boolean("keep-activities")));
 
         // Hide activities
         let position = 1;
