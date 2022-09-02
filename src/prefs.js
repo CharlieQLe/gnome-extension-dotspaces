@@ -4,7 +4,7 @@ const { Adw, Gio, GLib, Gtk } = imports.gi;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
-const { Settings } = Me.imports.constants;
+const { SettingKeys } = Me.imports.settings;
 
 /**
  * Like `extension.js` this is used for any one-time setup like translations.
@@ -33,7 +33,7 @@ function fillPreferencesWindow(window) {
     window.add(builder.get_object('general'));
 
     // Bind settings to switches
-    Settings.ALL_TOGGLES.forEach(key => {
+    SettingKeys.getToggleKeys().forEach(key => {
         const widget = builder.get_object(key.replaceAll('-', '_'));
         settings.bind(key, widget, 'active', Gio.SettingsBindFlags.DEFAULT);
     });
