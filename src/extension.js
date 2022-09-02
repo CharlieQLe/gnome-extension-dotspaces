@@ -25,6 +25,7 @@ const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const Dotspaces = Me.imports.dotspaces;
 const { toggle_activities } = Me.imports.utils.activitiesHandler;
+const { Settings } = Me.imports.constants;
 
 class Extension {
     constructor(uuid) {
@@ -32,13 +33,14 @@ class Extension {
     }
 
     enable() {
-        this._dotspaces = new Dotspaces.DotspaceContainer();
-        this._settings = ExtensionUtils.getSettings("org.gnome.shell.extensions.dotspaces");
-        this._activities_signal = this._settings.connect("changed::keep-activities", _ => toggle_activities(this._settings.get_boolean("keep-activities")));
+        Settings.initialize();
+        Settings.changedBoolean(Settings.KEEP_ACTIVITIES, state => toggle_activities(state));
 
+        this._dotspaces = new Dotspaces.DotspaceContainer();
+        
         // Hide activities
         let position = 1;
-        if (!this._settings.get_boolean('keep-activities')) {
+        if (!Settings.getBoolean(Settings.KEEP_ACTIVITIES)) {
             toggle_activities(false);
             position = 0;
         }
@@ -50,8 +52,8 @@ class Extension {
     disable() {
         this._dotspaces.destroy();
         this._dotspaces = null;
-        if (this._activities_signal) this._settings.disconnect(this._activities_signal);
         toggle_activities(true);
+        Settings.destroy();
     }
 }
 
