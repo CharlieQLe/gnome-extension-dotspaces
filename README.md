@@ -17,7 +17,7 @@ At the moment, it has only been tested with GNOME 42.
 Tar packages and an extension page are not available yet. However, the source can be used by cloning this repository and running the install script like so:
 
 ```
-git clone https://github.com/CharlieQLe/dotspaces.git
+git clone https://github.com/CharlieQLe/gnome-extension-dotspaces.git
 sh install.sh
 ```
 
