@@ -3,7 +3,8 @@
   "description": "A simple workspace switcher",
   "uuid": "dotspaces@charlieqle",
   "shell-version": [
-    "42"
+    "42",
+    "43"
   ],
   "url": "https://github.com/CharlieQLe/dotspaces"
 }
