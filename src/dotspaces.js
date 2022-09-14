@@ -5,9 +5,7 @@ const { Clutter, Gio, GObject, St } = imports.gi;
 const Main = imports.ui.main;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
-const { SettingKeys } = Me.imports.settings;
-const { SignalHandler } = Me.imports.utils.signalHandler;
-const { IconHandler } = Me.imports.utils.iconHandler;
+const { Settings, SignalHandler, IconHandler } = Me.imports.common;
 
 var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.Button {
     static {
@@ -19,7 +17,6 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
         this.track_hover = false;
 
         // Get settings
-        this._settings = ExtensionUtils.getSettings("org.gnome.shell.extensions.dotspaces");
         this._mutterSettings = new Gio.Settings({ schema: 'org.gnome.mutter' });
         
         // Create the icons
@@ -35,13 +32,13 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
 	    this._update_dots();
 
         // Connect events
+        Settings.onChanged(Settings.IGNORE_INACTIVE_OCCUPIED_WORKSPACES, this._update_dots);
+        Settings.onChanged(Settings.PANEL_SCROLL, _ => this._update_scroll(Settings.getBoolean(Settings.PANEL_SCROLL)))
         this._signalHandler = new SignalHandler(this); 
         this._signalHandler.add_signal(global.workspace_manager, "active-workspace-changed", this._update_dots);
         this._signalHandler.add_signal(global.workspace_manager, "notify::n-workspaces", this._update_dots);
-        this._signalHandler.add_signal(this._settings, "changed::ignore-inactive-occupied-workspaces", _ => this._update_dots);
-        this._signalHandler.add_signal(this._settings, "changed::panel-scroll", _ => this._update_scroll(this._settings.get_boolean(SettingKeys.PANEL_SCROLL)));
         this._signalHandler.add_signal(this._mutterSettings, "changed::dynamic-workspaces", this._update_dots);
-        this._update_scroll(this._settings.get_boolean(SettingKeys.PANEL_SCROLL));
+        this._update_scroll(Settings.getBoolean(Settings.PANEL_SCROLL));
     }
 
     /*
@@ -95,7 +92,7 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
         this.dots.destroy_all_children();
 
         // Get settings
-        const ignoreInactiveOccupiedWorkspaces = this._settings.get_boolean(SettingKeys.IGNORE_INACTIVE_OCCUPIED_WORKSPACES);
+        const ignoreInactiveOccupiedWorkspaces = Settings.getBoolean(Settings.IGNORE_INACTIVE_OCCUPIED_WORKSPACES);
         const dynamicWorkspaces = this._mutterSettings.get_boolean('dynamic-workspaces');
 
         // Update workspace information

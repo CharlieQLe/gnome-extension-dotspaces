@@ -24,7 +24,7 @@ const Main = imports.ui.main;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const Dotspaces = Me.imports.dotspaces;
-const { toggle_activities } = Me.imports.utils.activitiesHandler;
+const { Settings, toggleActivities } = Me.imports.common;
 
 class Extension {
     constructor(uuid) {
@@ -32,26 +32,28 @@ class Extension {
     }
 
     enable() {
-        this._dotspaces = new Dotspaces.DotspaceContainer();
-        this._settings = ExtensionUtils.getSettings("org.gnome.shell.extensions.dotspaces");
-        this._activities_signal = this._settings.connect("changed::keep-activities", _ => toggle_activities(this._settings.get_boolean("keep-activities")));
+        Settings.initialize();
 
-        // Hide activities
+        // Create the container
+        this._dotspaces = new Dotspaces.DotspaceContainer();
+        
+        // Handle visibility of activities
+        Settings.onChanged(Settings.KEEP_ACTIVITIES, _ => toggleActivities(Settings.getBoolean(Settings.KEEP_ACTIVITIES)))
+
+        // Modify panel
         let position = 1;
-        if (!this._settings.get_boolean('keep-activities')) {
-            toggle_activities(false);
+        if (!Settings.getBoolean(Settings.KEEP_ACTIVITIES)) {
+            toggleActivities(false);
             position = 0;
         }
-
-        // Add the workspaces to the left side of the panel
         Main.panel.addToStatusArea(this._uuid, this._dotspaces, position, 'left');
     }
 
     disable() {
         this._dotspaces.destroy();
         this._dotspaces = null;
-        if (this._activities_signal) this._settings.disconnect(this._activities_signal);
-        toggle_activities(true);
+        toggleActivities(true);
+        Settings.destroy();
     }
 }
 

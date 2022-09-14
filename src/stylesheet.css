@@ -16,3 +16,15 @@
   margin-left: 6px;
   margin-right: 6px;
 }
+
+.dotspaces-indicator:first-child {
+  color: red;
+}
+
+.dotspaces-indicator:nth-child(2) {
+  color: orange;
+}
+
+.dotspaces-indicator:nth-child(3) {
+  color: yellow;
+}

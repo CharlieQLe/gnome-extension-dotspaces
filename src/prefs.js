@@ -4,7 +4,7 @@ const { Adw, Gio, GLib, Gtk } = imports.gi;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
-const { SettingKeys } = Me.imports.settings;
+const { Settings } = Me.imports.common;
 
 /**
  * Like `extension.js` this is used for any one-time setup like translations.
@@ -23,7 +23,7 @@ function init(meta) { }
  * @param {Adw.PreferencesWindow} window - The preferences window
  */
 function fillPreferencesWindow(window) {
-    const settings = ExtensionUtils.getSettings("org.gnome.shell.extensions.dotspaces");
+    const settings = Settings.getNewSchema();
     const builder = new Gtk.Builder();
     
     // Add the ui file
@@ -33,7 +33,7 @@ function fillPreferencesWindow(window) {
     window.add(builder.get_object('general'));
 
     // Bind settings to switches
-    SettingKeys.getToggleKeys().forEach(key => {
+    Settings.getKeys().forEach(key => {
         const widget = builder.get_object(key.replaceAll('-', '_'));
         settings.bind(key, widget, 'active', Gio.SettingsBindFlags.DEFAULT);
     });
