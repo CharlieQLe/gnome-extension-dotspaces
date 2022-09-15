@@ -12,7 +12,6 @@ var Settings = class Settings {
     
     static initialize() {
         if (this._schema === undefined) this._schema = this.getNewSchema();
-        print(this._schema);
     }
 
     static destroy() {

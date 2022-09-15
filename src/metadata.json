@@ -6,6 +6,6 @@
     "42",
     "43"
   ],
-  "url": "https://github.com/CharlieQLe/dotspaces",
+  "url": "https://github.com/CharlieQLe/gnome-extension-dotspaces",
   "settings-schema": "org.gnome.shell.extensions.dotspaces"
 }
