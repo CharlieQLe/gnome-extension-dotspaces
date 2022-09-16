@@ -10,5 +10,8 @@
         <key name="panel-scroll" type="b">
             <default>true</default>
         </key>
+        <key name="wrap-workspaces" type="b">
+            <default>true</default>
+        </key>
     </schema>
 </schemalist>

@@ -76,8 +76,12 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
     
             // Modulo division to wrap the workspace index
             const workspaceCount = global.workspace_manager.get_n_workspaces();
-            index %= workspaceCount;
-            if (index < 0) index += workspaceCount;
+            if (Settings.getBoolean(Settings.WRAP_WORKSPACES)) {
+                index %= workspaceCount;
+                if (index < 0) index += workspaceCount;
+            } else {
+                index = Math.min(Math.max(index, 0), workspaceCount);
+            }
     
             // Change the workspace
             if (index >= 0 && index < workspaceCount) global.workspace_manager.get_workspace_by_index(index).activate(global.get_current_time());

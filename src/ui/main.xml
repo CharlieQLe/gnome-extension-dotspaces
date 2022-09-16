@@ -36,6 +36,17 @@
                         </child>
                     </object>
                 </child>
+                <child>
+                    <object class="AdwActionRow">
+                        <property name="title">Wrap Workspaces</property>
+                        <property name="activatable-widget">wrap_workspaces</property>
+                        <child>
+                            <object class="GtkSwitch" id="wrap_workspaces">
+                                <property name="valign">center</property>
+                            </object>
+                        </child>
+                    </object>
+                </child>
             </object>
         </child>
     </object>
