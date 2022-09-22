@@ -14,7 +14,11 @@ At the moment, it has only been tested with GNOME 42.
 
 ## How do I install?
 
-Tar packages and an extension page are not available yet. However, the source can be used by cloning this repository and running the install script like so:
+This can be installed from [extensions.gnome.org]() at the following link: [https://extensions.gnome.org/extension/5347/dotspaces/]()
+
+Tar packages are not available yet.
+
+The source can be used by cloning this repository and running the install script like so:
 
 ```
 git clone https://github.com/CharlieQLe/gnome-extension-dotspaces.git
@@ -22,9 +26,3 @@ sh install.sh
 ```
 
 After the installation, simply log out and log back in and it should show up in the Extensions application!
-
-## TO-DO
-
-* Refactor implementation to be more optimized (?)
-* Rewrite in TypeScript (?)
-* Publish on [extensions.gnome.org](https://extensions.gnome.org/)
