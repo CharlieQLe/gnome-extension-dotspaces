@@ -11,25 +11,9 @@ var Settings = class Settings {
     static PANEL_SCROLL = "panel-scroll";
     static WRAP_WORKSPACES = "wrap-workspaces";
     
-    static initialize() {
-        if (this._schema === undefined) this._schema = this.getNewSchema();
-    }
-
-    static destroy() {
-        if (this._schema !== undefined) this._schema.run_dispose();
-    }
-
     static getNewSchema() {
         const extensionUtils = imports.misc.extensionUtils;
         return extensionUtils.getSettings(extensionUtils.getCurrentExtension().metadata['settings-schema']);
-    }
-
-    static getSchema() {
-        return this._schema;
-    }
-
-    static onChanged(key, func) {
-        this._schema.connect(`changed::${key}`, func);
     }
 
     static getKeys() {
@@ -40,12 +24,28 @@ var Settings = class Settings {
             this.WRAP_WORKSPACES
         ];
     }
+    
+    constructor() {
+        this._schema = Settings.getNewSchema();
+    }
+    
+    destroy() {
+        this._schema.run_dispose();
+    }
 
-    static getBoolean(key) {
+    getSchema() {
+        return this._schema;
+    }
+
+    onChanged(key, func) {
+        this._schema.connect(`changed::${key}`, func);
+    }
+
+    getBoolean(key) {
         return this._schema.get_boolean(key);
     }
 
-    static setBoolean(key, value) {
+    setBoolean(key, value) {
         this._schema.set_boolean(key, value);
     }
 }

@@ -32,28 +32,33 @@ class Extension {
     }
 
     enable() {
-        Settings.initialize();
+        this._settings = new Settings();
 
-        // Create the container
-        this._dotspaces = new Dotspaces.DotspaceContainer();
-        
         // Handle visibility of activities
-        Settings.onChanged(Settings.KEEP_ACTIVITIES, _ => toggleActivities(Settings.getBoolean(Settings.KEEP_ACTIVITIES)))
+        this._settings.onChanged(Settings.KEEP_ACTIVITIES, () => this._updateDotspaces());
 
         // Modify panel
-        let position = 1;
-        if (!Settings.getBoolean(Settings.KEEP_ACTIVITIES)) {
-            toggleActivities(false);
-            position = 0;
-        }
-        Main.panel.addToStatusArea(this._uuid, this._dotspaces, position, 'left');
+        this._updateDotspaces();
     }
 
     disable() {
-        this._dotspaces.destroy();
-        this._dotspaces = null;
+        if (this._dotspaces) {
+            this._dotspaces.destroy();
+            this._dotspaces = null;
+        }
         toggleActivities(true);
-        Settings.destroy();
+        this._settings.destroy();
+    }
+
+    _updateDotspaces() {
+        this._dotspaces?.destroy();
+        this._dotspaces = new Dotspaces.DotspaceContainer();
+        let position = 0;
+        if (this._settings.getBoolean(Settings.KEEP_ACTIVITIES)) {
+            toggleActivities(true);
+            position = 1;
+        } else toggleActivities(false);
+        Main.panel.addToStatusArea(this._uuid, this._dotspaces, position, 'left');
     }
 }
 

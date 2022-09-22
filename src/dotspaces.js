@@ -17,6 +17,7 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
         this.track_hover = false;
 
         // Get settings
+        this._settings = new Settings();
         this._mutterSettings = new Gio.Settings({ schema: 'org.gnome.mutter' });
         
         // Create the icons
@@ -32,13 +33,13 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
 	    this._update_dots();
 
         // Connect events
-        Settings.onChanged(Settings.IGNORE_INACTIVE_OCCUPIED_WORKSPACES, this._update_dots);
-        Settings.onChanged(Settings.PANEL_SCROLL, _ => this._update_scroll(Settings.getBoolean(Settings.PANEL_SCROLL)))
+        this._settings.onChanged(Settings.IGNORE_INACTIVE_OCCUPIED_WORKSPACES, this._update_dots);
+        this._settings.onChanged(Settings.PANEL_SCROLL, _ => this._update_scroll(this._settings.getBoolean(Settings.PANEL_SCROLL)))
         this._signalHandler = new SignalHandler(this); 
         this._signalHandler.add_signal(global.workspace_manager, "active-workspace-changed", this._update_dots);
         this._signalHandler.add_signal(global.workspace_manager, "notify::n-workspaces", this._update_dots);
         this._signalHandler.add_signal(this._mutterSettings, "changed::dynamic-workspaces", this._update_dots);
-        this._update_scroll(Settings.getBoolean(Settings.PANEL_SCROLL));
+        this._update_scroll(this._settings.getBoolean(Settings.PANEL_SCROLL));
     }
 
     /*
@@ -51,8 +52,13 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
         // Remove all icons
         this._icons.delete_all_icons();
 
-        // Destroy
+        // Destroy dots
         this.dots.destroy();
+
+        // Destroy settings
+        this._settings.destroy();
+
+        // Call original destroy
         super.destroy();
     }
 
@@ -76,7 +82,7 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
     
             // Modulo division to wrap the workspace index
             const workspaceCount = global.workspace_manager.get_n_workspaces();
-            if (Settings.getBoolean(Settings.WRAP_WORKSPACES)) {
+            if (this._settings.getBoolean(Settings.WRAP_WORKSPACES)) {
                 index %= workspaceCount;
                 if (index < 0) index += workspaceCount;
             } else {
@@ -96,7 +102,7 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
         this.dots.destroy_all_children();
 
         // Get settings
-        const ignoreInactiveOccupiedWorkspaces = Settings.getBoolean(Settings.IGNORE_INACTIVE_OCCUPIED_WORKSPACES);
+        const ignoreInactiveOccupiedWorkspaces = this._settings.getBoolean(Settings.IGNORE_INACTIVE_OCCUPIED_WORKSPACES);
         const dynamicWorkspaces = this._mutterSettings.get_boolean('dynamic-workspaces');
 
         // Update workspace information
