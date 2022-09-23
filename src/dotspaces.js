@@ -21,11 +21,10 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
         this._mutterSettings = new Gio.Settings({ schema: 'org.gnome.mutter' });
         
         // Create the icons
-        this._icons = new IconHandler();
-        this._icons.add_icon("active", `${Me.path}/icons/active-symbolic.svg`);
-        this._icons.add_icon("inactive-occupied", `${Me.path}/icons/inactive-occupied-symbolic.svg`);
-        this._icons.add_icon("inactive-unoccupied", `${Me.path}/icons/inactive-unoccupied-symbolic.svg`);
-        this._icons.add_icon("dynamic", `${Me.path}/icons/dynamic-symbolic.svg`);
+        this._iconActive = Gio.icon_new_for_string(`${Me.path}/icons/active-symbolic.svg`);
+        this._iconInactiveOccupied = Gio.icon_new_for_string(`${Me.path}/icons/inactive-occupied-symbolic.svg`);
+        this._iconInactiveUnoccupied = Gio.icon_new_for_string(`${Me.path}/icons/inactive-unoccupied-symbolic.svg`);
+        this._iconDynamic = Gio.icon_new_for_string(`${Me.path}/icons/dynamic-symbolic.svg`);
 
         // Create the box to hold the dots 
 	    this.dots = new St.BoxLayout({});
@@ -48,9 +47,6 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
     destroy() {
         // Disconnect events
         this._signalHandler.clear_signals()
-
-        // Remove all icons
-        this._icons.delete_all_icons();
 
         // Destroy dots
         this.dots.destroy();
@@ -129,14 +125,14 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
             dotsContainer.add_style_class_name("dotspaces-indicator");
 
             // Default icon name and size
-            let gicon = this._icons.get_icon("inactive-unoccupied");
+            let gicon = this._iconInactiveUnoccupied;
             let icon_size = 14;
 
             // Handle the active state
             if (workspace.active) {
                 // Add the style class and set the icon
                 dotsContainer.add_style_class_name("active");
-                gicon = this._icons.get_icon("active");
+                gicon = this._iconActive;
 
                 // Toggle the overview on clicking the active workspace
                 dotsContainer.connect('button-release-event', () => {
@@ -145,7 +141,7 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
                 });
             } else {
                 // Set the icon if this workspace is occupied
-                if (isOccupied) gicon = this._icons.get_icon("inactive-occupied");
+                if (isOccupied) gicon = this._iconInactiveOccupied;
                 
                 // Change workspace on clicking the desired workspace
                 dotsContainer.connect('button-release-event', () => workspace.activate(global.get_current_time()));
@@ -154,7 +150,7 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
             // Handle the dynamic state
             if (isDynamic) {
                 dotsContainer.add_style_class_name("dynamic");
-                gicon = this.iconDynamic;
+                gicon = this._iconDynamic;
                 icon_size = workspace.active ? 12 : 8;
             }
 
