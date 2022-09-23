@@ -5,7 +5,7 @@ const { Clutter, Gio, GObject, St } = imports.gi;
 const Main = imports.ui.main;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
-const { Settings, SignalHandler, IconHandler } = Me.imports.common;
+const { Settings } = Me.imports.common;
 
 var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.Button {
     static {
@@ -34,28 +34,41 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
         // Connect events
         this._settings.onChanged(Settings.IGNORE_INACTIVE_OCCUPIED_WORKSPACES, this._update_dots);
         this._settings.onChanged(Settings.PANEL_SCROLL, _ => this._update_scroll(this._settings.getBoolean(Settings.PANEL_SCROLL)))
-        this._signalHandler = new SignalHandler(this); 
-        this._signalHandler.add_signal(global.workspace_manager, "active-workspace-changed", this._update_dots);
-        this._signalHandler.add_signal(global.workspace_manager, "notify::n-workspaces", this._update_dots);
-        this._signalHandler.add_signal(this._mutterSettings, "changed::dynamic-workspaces", this._update_dots);
+        
+        this._activeWorkspaceChangedId = global.workspace_manager.connect("active-workspace-changed", this._update_dots.bind(this));
+        this._notifyNWorkspacesId = global.workspace_manager.connect("notify::n-workspaces", this._update_dots.bind(this));
+        this._changedDynamicWorkspacesId = this._mutterSettings.connect("changed::dynamic-workspaces", this._update_dots.bind(this));
+        this.connect("destroy", () => {
+            if (this._activeWorkspaceChangedId) global.workspace_manager.disconnect(this._activeWorkspaceChangedId);
+            if (this._notifyNWorkspacesId) global.workspace_manager.disconnect(this._notifyNWorkspacesId);
+            if (this._changedDynamicWorkspacesId) this._mutterSettings.disconnect(this._changedDynamicWorkspacesId);
+            if (this._settings.getBoolean(Settings.PANEL_SCROLL) && this._scrollEventId) Main.panel.disconnect(this._scrollEventId);
+            this.dots.destroy();
+            this._settings.destroy();
+        });
+
         this._update_scroll(this._settings.getBoolean(Settings.PANEL_SCROLL));
     }
 
-    /*
-     * Handle destroy.
-     */
-    destroy() {
-        // Disconnect events
-        this._signalHandler.clear_signals()
+    _on_scroll(_, event) {
+        // Increment or decrement the index
+        let index = global.workspace_manager.get_active_workspace_index();
+        switch (event.get_scroll_direction()) {
+            case Clutter.ScrollDirection.UP: index--; break;
+            case Clutter.ScrollDirection.DOWN: index++; break;
+        }
 
-        // Destroy dots
-        this.dots.destroy();
+        // Modulo division to wrap the workspace index
+        const workspaceCount = global.workspace_manager.get_n_workspaces();
+        if (this._settings.getBoolean(Settings.WRAP_WORKSPACES)) {
+            index %= workspaceCount;
+            if (index < 0) index += workspaceCount;
+        } else {
+            index = Math.min(Math.max(index, 0), workspaceCount);
+        }
 
-        // Destroy settings
-        this._settings.destroy();
-
-        // Call original destroy
-        super.destroy();
+        // Change the workspace
+        if (index >= 0 && index < workspaceCount) global.workspace_manager.get_workspace_by_index(index).activate(global.get_current_time());
     }
 
     /**
@@ -64,30 +77,11 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
      * @param {Boolean} usePanel
      */
     _update_scroll(usePanel) {
-        // Remove the existing scroll signal if it exists
-        if (this._scrollSignal) this._signalHandler.remove_signal(this._scrollSignal);
+        // Remove the existing scroll event
+        if (this._scrollEventId) (this._settings.getBoolean(Settings.PANEL_SCROLL) ? this : Main.panel).disconnect(this._scrollEventId);
 
-        // Add the scroll signal to the panel or this
-        this._scrollSignal = this._signalHandler.add_signal(usePanel ? Main.panel : this, 'scroll-event', (_, event) => {
-            // Increment or decrement the index
-            let index = global.workspace_manager.get_active_workspace_index();
-            switch (event.get_scroll_direction()) {
-                case Clutter.ScrollDirection.UP: index--; break;
-                case Clutter.ScrollDirection.DOWN: index++; break;
-            }
-    
-            // Modulo division to wrap the workspace index
-            const workspaceCount = global.workspace_manager.get_n_workspaces();
-            if (this._settings.getBoolean(Settings.WRAP_WORKSPACES)) {
-                index %= workspaceCount;
-                if (index < 0) index += workspaceCount;
-            } else {
-                index = Math.min(Math.max(index, 0), workspaceCount);
-            }
-    
-            // Change the workspace
-            if (index >= 0 && index < workspaceCount) global.workspace_manager.get_workspace_by_index(index).activate(global.get_current_time());
-        });
+        // Add the scroll event
+        this._scrollEventId = (this._settings.getBoolean(Settings.PANEL_SCROLL) ? Main.panel : this).connect("scroll-event", this._on_scroll.bind(this));
     }
     
     /*
