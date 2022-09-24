@@ -24,7 +24,7 @@ const Main = imports.ui.main;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const Dotspaces = Me.imports.dotspaces;
-const { Settings, toggleActivities } = Me.imports.common;
+const { DotspaceSettings, toggleActivities } = Me.imports.common;
 
 class Extension {
     constructor(uuid) {
@@ -32,10 +32,11 @@ class Extension {
     }
 
     enable() {
-        this._settings = new Settings();
+        this._dotspaceSettings = new DotspaceSettings();
 
         // Handle visibility of activities
-        this._settings.onChanged(Settings.KEEP_ACTIVITIES, () => this._updateDotspaces());
+        this._dotspaceSettings.onChanged(DotspaceSettings.KEEP_ACTIVITIES, this._updateDotspaces.bind(this));
+        this._dotspaceSettings.onChanged(DotspaceSettings.PANEL_SCROLL, this._updateDotspaces.bind(this));
 
         // Modify panel
         this._updateDotspaces();
@@ -47,14 +48,13 @@ class Extension {
             this._dotspaces = null;
         }
         toggleActivities(true);
-        this._settings.destroy();
     }
 
     _updateDotspaces() {
         this._dotspaces?.destroy();
         this._dotspaces = new Dotspaces.DotspaceContainer();
         let position = 0;
-        if (this._settings.getBoolean(Settings.KEEP_ACTIVITIES)) {
+        if (this._dotspaceSettings.keepActivities) {
             toggleActivities(true);
             position = 1;
         } else toggleActivities(false);

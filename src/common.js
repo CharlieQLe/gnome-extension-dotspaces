@@ -5,7 +5,7 @@ const { Gio } = imports.gi;
 /**
  * Handles settings.
  */
-var Settings = class Settings {
+var DotspaceSettings = class DotspaceSettings {
     static IGNORE_INACTIVE_OCCUPIED_WORKSPACES = "ignore-inactive-occupied-workspaces";
     static KEEP_ACTIVITIES = "keep-activities";
     static PANEL_SCROLL = "panel-scroll";
@@ -26,14 +26,10 @@ var Settings = class Settings {
     }
     
     constructor() {
-        this._schema = Settings.getNewSchema();
-    }
-    
-    destroy() {
-        this._schema.run_dispose();
+        this._schema = DotspaceSettings.getNewSchema();
     }
 
-    getSchema() {
+    get schema() {
         return this._schema;
     }
 
@@ -47,6 +43,22 @@ var Settings = class Settings {
 
     setBoolean(key, value) {
         this._schema.set_boolean(key, value);
+    }
+
+    get ignoreInactiveOccupiedWorkspaces() {
+        return this.getBoolean(DotspaceSettings.IGNORE_INACTIVE_OCCUPIED_WORKSPACES);
+    }
+
+    get keepActivities() {
+        return this.getBoolean(DotspaceSettings.KEEP_ACTIVITIES);
+    }
+
+    get panelScroll() {
+        return this.getBoolean(DotspaceSettings.PANEL_SCROLL);
+    }
+
+    get wrapWorkspaces() {
+        return this.getBoolean(DotspaceSettings.WRAP_WORKSPACES);
     }
 }
 

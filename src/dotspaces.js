@@ -5,7 +5,7 @@ const { Clutter, Gio, GObject, St } = imports.gi;
 const Main = imports.ui.main;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
-const { Settings } = Me.imports.common;
+const { DotspaceSettings } = Me.imports.common;
 
 var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.Button {
     static {
@@ -17,30 +17,27 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
         this.track_hover = false;
 
         // Get settings
-        this._settings = new Settings();
+        this._dotspaceSettings = new DotspaceSettings();
         this._mutterSettings = new Gio.Settings({ schema: 'org.gnome.mutter' });
         
         // Create the box to hold the dots 
-	    this.dots = new St.BoxLayout({});
-        this.add_child(this.dots);
+	    this._dots = new St.BoxLayout({});
+        this.add_child(this._dots);
 	    this._update_dots();
 
         // Connect events
-        this._settings.onChanged(Settings.IGNORE_INACTIVE_OCCUPIED_WORKSPACES, this._update_dots);
-        this._settings.onChanged(Settings.PANEL_SCROLL, _ => this._update_scroll(this._settings.getBoolean(Settings.PANEL_SCROLL)));
+        const scrollEventSource = this._dotspaceSettings.panelScroll ? Main.panel : this;
+        this._dotspaceSettings.onChanged(DotspaceSettings.IGNORE_INACTIVE_OCCUPIED_WORKSPACES, this._update_dots.bind(this));
         this._activeWorkspaceChangedId = global.workspace_manager.connect("active-workspace-changed", this._update_dots.bind(this));
         this._notifyNWorkspacesId = global.workspace_manager.connect("notify::n-workspaces", this._update_dots.bind(this));
-        this._changedDynamicWorkspacesId = this._mutterSettings.connect("changed::dynamic-workspaces", this._update_dots.bind(this));
+        this._scrollEventId = scrollEventSource.connect("scroll-event", this._on_scroll.bind(this));
+        this._mutterSettings.connect("changed::dynamic-workspaces", this._update_dots.bind(this));
         this.connect("destroy", () => {
             if (this._activeWorkspaceChangedId) global.workspace_manager.disconnect(this._activeWorkspaceChangedId);
             if (this._notifyNWorkspacesId) global.workspace_manager.disconnect(this._notifyNWorkspacesId);
-            if (this._changedDynamicWorkspacesId) this._mutterSettings.disconnect(this._changedDynamicWorkspacesId);
-            if (this._settings.getBoolean(Settings.PANEL_SCROLL) && this._scrollEventId) Main.panel.disconnect(this._scrollEventId);
-            this.dots.destroy();
-            this._settings.destroy();
+            if (this._scrollEventId) scrollEventSource.disconnect(this._scrollEventId);
+            this._dots.destroy();
         });
-
-        this._update_scroll(this._settings.getBoolean(Settings.PANEL_SCROLL));
     }
 
     _get_icon(name) {
@@ -57,28 +54,13 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
 
         // Modulo division to wrap the workspace index
         const workspaceCount = global.workspace_manager.get_n_workspaces();
-        if (this._settings.getBoolean(Settings.WRAP_WORKSPACES)) {
+        if (this._dotspaceSettings.wrapWorkspaces) {
             index %= workspaceCount;
             if (index < 0) index += workspaceCount;
-        } else {
-            index = Math.min(Math.max(index, 0), workspaceCount);
-        }
-
+        } else index = Math.min(Math.max(index, 0), workspaceCount);
+        
         // Change the workspace
         if (index >= 0 && index < workspaceCount) global.workspace_manager.get_workspace_by_index(index).activate(global.get_current_time());
-    }
-
-    /**
-     * Update the scroll signal.
-     * 
-     * @param {Boolean} usePanel
-     */
-    _update_scroll(usePanel) {
-        // Remove the existing scroll event
-        if (this._scrollEventId) (this._settings.getBoolean(Settings.PANEL_SCROLL) ? this : Main.panel).disconnect(this._scrollEventId);
-
-        // Add the scroll event
-        this._scrollEventId = (this._settings.getBoolean(Settings.PANEL_SCROLL) ? Main.panel : this).connect("scroll-event", this._on_scroll.bind(this));
     }
     
     /*
@@ -86,10 +68,10 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
      */
     _update_dots() {
         // Destroy all dots
-        this.dots.destroy_all_children();
+        this._dots.destroy_all_children();
 
         // Get settings
-        const ignoreInactiveOccupiedWorkspaces = this._settings.getBoolean(Settings.IGNORE_INACTIVE_OCCUPIED_WORKSPACES);
+        const ignoreInactiveOccupiedWorkspaces = this._dotspaceSettings.ignoreInactiveOccupiedWorkspaces;
         const dynamicWorkspaces = this._mutterSettings.get_boolean('dynamic-workspaces');
 
         // Update workspace information
@@ -150,7 +132,7 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
 	        dotsContainer.set_child(dotsContainer.icon);
 
             // Add actor
-            this.dots.add_actor(dotsContainer);
+            this._dots.add_actor(dotsContainer);
         }
     }
 }
