@@ -20,12 +20,6 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
         this._settings = new Settings();
         this._mutterSettings = new Gio.Settings({ schema: 'org.gnome.mutter' });
         
-        // Create the icons
-        this._iconActive = Gio.icon_new_for_string(`${Me.path}/icons/active-symbolic.svg`);
-        this._iconInactiveOccupied = Gio.icon_new_for_string(`${Me.path}/icons/inactive-occupied-symbolic.svg`);
-        this._iconInactiveUnoccupied = Gio.icon_new_for_string(`${Me.path}/icons/inactive-unoccupied-symbolic.svg`);
-        this._iconDynamic = Gio.icon_new_for_string(`${Me.path}/icons/dynamic-symbolic.svg`);
-
         // Create the box to hold the dots 
 	    this.dots = new St.BoxLayout({});
         this.add_child(this.dots);
@@ -33,8 +27,7 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
 
         // Connect events
         this._settings.onChanged(Settings.IGNORE_INACTIVE_OCCUPIED_WORKSPACES, this._update_dots);
-        this._settings.onChanged(Settings.PANEL_SCROLL, _ => this._update_scroll(this._settings.getBoolean(Settings.PANEL_SCROLL)))
-        
+        this._settings.onChanged(Settings.PANEL_SCROLL, _ => this._update_scroll(this._settings.getBoolean(Settings.PANEL_SCROLL)));
         this._activeWorkspaceChangedId = global.workspace_manager.connect("active-workspace-changed", this._update_dots.bind(this));
         this._notifyNWorkspacesId = global.workspace_manager.connect("notify::n-workspaces", this._update_dots.bind(this));
         this._changedDynamicWorkspacesId = this._mutterSettings.connect("changed::dynamic-workspaces", this._update_dots.bind(this));
@@ -48,6 +41,10 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
         });
 
         this._update_scroll(this._settings.getBoolean(Settings.PANEL_SCROLL));
+    }
+
+    _get_icon(name) {
+        return Gio.icon_new_for_string(`${Me.path}/icons/${name}-symbolic.svg`);
     }
 
     _on_scroll(_, event) {
@@ -119,14 +116,14 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
             dotsContainer.add_style_class_name("dotspaces-indicator");
 
             // Default icon name and size
-            let gicon = this._iconInactiveUnoccupied;
+            let gicon = this._get_icon("inactive-unoccupied");
             let icon_size = 14;
 
             // Handle the active state
             if (workspace.active) {
                 // Add the style class and set the icon
                 dotsContainer.add_style_class_name("active");
-                gicon = this._iconActive;
+                gicon = this._get_icon("active");
 
                 // Toggle the overview on clicking the active workspace
                 dotsContainer.connect('button-release-event', () => {
@@ -135,7 +132,7 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
                 });
             } else {
                 // Set the icon if this workspace is occupied
-                if (isOccupied) gicon = this._iconInactiveOccupied;
+                if (isOccupied) gicon = this._get_icon("inactive-occupied");
                 
                 // Change workspace on clicking the desired workspace
                 dotsContainer.connect('button-release-event', () => workspace.activate(global.get_current_time()));
@@ -144,7 +141,7 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
             // Handle the dynamic state
             if (isDynamic) {
                 dotsContainer.add_style_class_name("dynamic");
-                gicon = this._iconDynamic;
+                gicon = this._get_icon("dynamic");
                 icon_size = workspace.active ? 12 : 8;
             }
 
