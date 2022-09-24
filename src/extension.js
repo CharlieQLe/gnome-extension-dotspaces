@@ -35,8 +35,8 @@ class Extension {
         this._dotspaceSettings = new DotspaceSettings();
 
         // Handle visibility of activities
-        this._dotspaceSettings.onChanged(DotspaceSettings.KEEP_ACTIVITIES, this._updateDotspaces.bind(this));
-        this._dotspaceSettings.onChanged(DotspaceSettings.PANEL_SCROLL, this._updateDotspaces.bind(this));
+        this._dotspaceSettings.onChangedKeepActivities(this._updateDotspaces.bind(this));
+        this._dotspaceSettings.onChangedPanelScroll(this._updateDotspaces.bind(this));
 
         // Modify panel
         this._updateDotspaces();

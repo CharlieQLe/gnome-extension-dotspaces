@@ -5,7 +5,7 @@ const { Clutter, Gio, GObject, St } = imports.gi;
 const Main = imports.ui.main;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
-const { DotspaceSettings } = Me.imports.common;
+const { DotspaceSettings, MutterSettings } = Me.imports.common;
 
 var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.Button {
     static {
@@ -18,7 +18,7 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
 
         // Get settings
         this._dotspaceSettings = new DotspaceSettings();
-        this._mutterSettings = new Gio.Settings({ schema: 'org.gnome.mutter' });
+        this._mutterSettings = new MutterSettings();
         
         // Create the box to hold the dots 
 	    this._dots = new St.BoxLayout({});
@@ -27,11 +27,11 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
 
         // Connect events
         const scrollEventSource = this._dotspaceSettings.panelScroll ? Main.panel : this;
-        this._dotspaceSettings.onChanged(DotspaceSettings.IGNORE_INACTIVE_OCCUPIED_WORKSPACES, this._update_dots.bind(this));
+        this._dotspaceSettings.onChangedIgnoreInactiveOccupiedWorkspaces(this._update_dots.bind(this));
         this._activeWorkspaceChangedId = global.workspace_manager.connect("active-workspace-changed", this._update_dots.bind(this));
         this._notifyNWorkspacesId = global.workspace_manager.connect("notify::n-workspaces", this._update_dots.bind(this));
         this._scrollEventId = scrollEventSource.connect("scroll-event", this._on_scroll.bind(this));
-        this._mutterSettings.connect("changed::dynamic-workspaces", this._update_dots.bind(this));
+        this._mutterSettings.onChangedDynamicWorkspaces(this._update_dots.bind(this));
         this.connect("destroy", () => {
             if (this._activeWorkspaceChangedId) global.workspace_manager.disconnect(this._activeWorkspaceChangedId);
             if (this._notifyNWorkspacesId) global.workspace_manager.disconnect(this._notifyNWorkspacesId);
@@ -72,7 +72,7 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
 
         // Get settings
         const ignoreInactiveOccupiedWorkspaces = this._dotspaceSettings.ignoreInactiveOccupiedWorkspaces;
-        const dynamicWorkspaces = this._mutterSettings.get_boolean('dynamic-workspaces');
+        const dynamicWorkspaces = this._mutterSettings.dynamicWorkspaces;
 
         // Update workspace information
         const workspaceCount = global.workspace_manager.get_n_workspaces();
