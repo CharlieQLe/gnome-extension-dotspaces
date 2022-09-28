@@ -10,7 +10,7 @@ This does ***not*** and ***will not*** have drag-and-drop workspaces for workspa
 
 ## What versions of GNOME does DOTSPACES support?
 
-At the moment, it has only been tested with GNOME 42.
+At the moment, it has only been tested with GNOME 42 and 43.
 
 ## How do I install?
 
