@@ -48,6 +48,7 @@ class Extension {
             this._dotspaces = null;
         }
         toggleActivities(true);
+        this._dotspaceSettings = null;
     }
 
     _updateDotspaces() {
