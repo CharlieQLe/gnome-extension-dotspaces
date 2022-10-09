@@ -79,8 +79,6 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
      * Update the dot indicators, rebuilding if necessary.
      */
     _update_dots() {
-        print('updating!');
-
         // Get children
         const children = this._dots.get_children();
 
@@ -135,8 +133,6 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
      * Rebuild the dot indicators.
      */
     _rebuild_dots() {
-        print('rebuilding!');
-
         // Destroy all dots
         this._dots.destroy_all_children();
 
