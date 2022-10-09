@@ -23,7 +23,7 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
         // Create the box to hold the dots 
 	    this._dots = new St.BoxLayout({});
         this.add_child(this._dots);
-	    this._update_dots();
+	    this._rebuild_dots();
 
         // Connect events
         const scrollEventSource = this._dotspaceSettings.panelScroll ? Main.panel : this;
@@ -62,17 +62,74 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
         // Change the workspace
         if (index >= 0 && index < workspaceCount) global.workspace_manager.get_workspace_by_index(index).activate(global.get_current_time());
     }
-    
-    /*
-     * Update the dot indicators.
+
+    /**
+     * Update the dot indicators, rebuilding if necessary.
      */
     _update_dots() {
+        print('updating!');
+
+        // Get children
+        const children = this._dots.get_children();
+
+        // Update workspace information
+        const workspaceCount = global.workspace_manager.get_n_workspaces();
+
+        // If there are too many children, rebuild
+        if (children.length > workspaceCount) {
+            this._rebuild_dots();
+            return;
+        }
+
+        // Get settings
+        const ignoreInactiveOccupiedWorkspaces = this._dotspaceSettings.ignoreInactiveOccupiedWorkspaces;
+        const dynamicWorkspacesEnabled = this._mutterSettings.dynamicWorkspaces;
+
+        // Get the number of windows that are on all workspaces
+        const windowsOnAllWSCount = ignoreInactiveOccupiedWorkspaces ? 0 : global.display.list_all_windows().filter(w => w.is_on_all_workspaces() && w.get_wm_class() !== "Gnome-shell").length;
+
+        // Handle the existing children
+        children.forEach((dotsContainer, index) => {
+            // Remove style classes
+            dotsContainer.set_style_class_name(null);
+
+            // Remove children
+            dotsContainer.destroy_all_children();
+
+            // Remove signal
+            if (dotsContainer.releaseSignalId !== null) dotsContainer.disconnect(dotsContainer.releaseSignalId);
+                            
+            // Get the dot data
+            const data = this._handle_workspace_dot(index, ignoreInactiveOccupiedWorkspaces, dynamicWorkspacesEnabled, workspaceCount, windowsOnAllWSCount);
+
+            // Set the style class
+            data.styleClasses.forEach(styleClass => dotsContainer.add_style_class_name(styleClass));
+
+            // Create the icon
+            dotsContainer.icon = new St.Icon({ gicon: data.gicon, icon_size: data.giconSize });
+            dotsContainer.set_child(dotsContainer.icon);
+
+            // Connect signal
+            dotsContainer.releaseSignalId = dotsContainer.connect('button-release-event', data.buttonReleaseFunc);
+        });
+
+        // Add more dots if needed
+        for (let i = children.length; i < workspaceCount; i++) {
+            this._dots.add_actor(this._build_dot(i, dynamicWorkspacesEnabled, workspaceCount, windowsOnAllWSCount));
+        }
+    }
+    /*
+     * Rebuild the dot indicators.
+     */
+    _rebuild_dots() {
+        print('rebuilding!');
+
         // Destroy all dots
         this._dots.destroy_all_children();
 
         // Get settings
         const ignoreInactiveOccupiedWorkspaces = this._dotspaceSettings.ignoreInactiveOccupiedWorkspaces;
-        const dynamicWorkspaces = this._mutterSettings.dynamicWorkspaces;
+        const dynamicWorkspacesEnabled = this._mutterSettings.dynamicWorkspaces;
 
         // Update workspace information
         const workspaceCount = global.workspace_manager.get_n_workspaces();
@@ -82,57 +139,100 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
 
         // Create dots
         for (let i = 0; i < workspaceCount; i++) {
-            // Get the current workspace
-            const workspace = global.workspace_manager.get_workspace_by_index(i);
-
-            // Check if this workspace is occupied by windows by getting the windows on a workspace then subtracting the windows that exist on all workspaces
-            const isOccupied = !ignoreInactiveOccupiedWorkspaces && workspace.list_windows().length - windowsOnAllWSCount > 0;
-
-            // Get if this is the dynamic workspace
-            const isDynamic = dynamicWorkspaces && i === workspaceCount - 1;
-            
-            // Create the new workspace indicator
-            const dotsContainer = new St.Bin({ visible: true, reactive: true, can_focus: false, track_hover: true });
-            
-            // Add the style class
-            dotsContainer.add_style_class_name("dotspaces-indicator");
-
-            // Default icon name and size
-            let gicon = this._get_icon("inactive-unoccupied");
-            let icon_size = 14;
-
-            // Handle the active state
-            if (workspace.active) {
-                // Add the style class and set the icon
-                dotsContainer.add_style_class_name("active");
-                gicon = this._get_icon("active");
-
-                // Toggle the overview on clicking the active workspace
-                dotsContainer.connect('button-release-event', () => {
-                    if (Main.overview._visible) Main.overview.hide();
-                    else Main.overview.show();
-                });
-            } else {
-                // Set the icon if this workspace is occupied
-                if (isOccupied) gicon = this._get_icon("inactive-occupied");
-                
-                // Change workspace on clicking the desired workspace
-                dotsContainer.connect('button-release-event', () => workspace.activate(global.get_current_time()));
-            }
-
-            // Handle the dynamic state
-            if (isDynamic) {
-                dotsContainer.add_style_class_name("dynamic");
-                gicon = this._get_icon("dynamic");
-                icon_size = workspace.active ? 12 : 8;
-            }
-
-            // Create the icon
-            dotsContainer.icon = new St.Icon({ gicon: gicon, icon_size: icon_size });
-	        dotsContainer.set_child(dotsContainer.icon);
-
-            // Add actor
-            this._dots.add_actor(dotsContainer);
+            this._dots.add_actor(this._build_dot(i, ignoreInactiveOccupiedWorkspaces, dynamicWorkspacesEnabled, workspaceCount, windowsOnAllWSCount));
         }
+    }
+
+    /**
+     * Build a dot indicator.
+     * 
+     * @param {number} index 
+     * @param {boolean} ignoreInactiveOccupiedWorkspaces
+     * @param {boolean} dynamicWorkspacesEnabled 
+     * @param {number} workspaceCount 
+     * @param {number} windowsOnAllWSCount 
+     * @returns St.Bin
+     */
+    _build_dot(index, ignoreInactiveOccupiedWorkspaces, dynamicWorkspacesEnabled, workspaceCount, windowsOnAllWSCount) {
+        // Create the new workspace indicator
+        const dotsContainer = new St.Bin({ visible: true, reactive: true, can_focus: false, track_hover: true });
+            
+        // Get the dot data
+        const data = this._handle_workspace_dot(index, ignoreInactiveOccupiedWorkspaces, dynamicWorkspacesEnabled, workspaceCount, windowsOnAllWSCount);
+
+        // Set the style class
+        data.styleClasses.forEach(styleClass => dotsContainer.add_style_class_name(styleClass));
+
+        // Create the icon  
+        dotsContainer.icon = new St.Icon({ gicon: data.gicon, icon_size: data.giconSize });
+        dotsContainer.set_child(dotsContainer.icon);
+
+        // Connect signal
+        dotsContainer.releaseSignalId = dotsContainer.connect('button-release-event', data.buttonReleaseFunc);
+
+        return dotsContainer;
+    }
+    
+    /**
+     * Return dotspace information.
+     * 
+     * @param {number} index 
+     * @param {boolean} ignoreInactiveOccupiedWorkspaces
+     * @param {boolean} dynamicWorkspacesEnabled 
+     * @param {number} workspaceCount 
+     * @param {number} windowsOnAllWSCount 
+     * @returns 
+     */
+    _handle_workspace_dot(index, ignoreInactiveOccupiedWorkspaces,  dynamicWorkspacesEnabled, workspaceCount, windowsOnAllWSCount) {
+        // Get the current workspace
+        const workspace = global.workspace_manager.get_workspace_by_index(index);
+
+        // Check if this workspace is occupied by windows by getting the windows on a workspace then subtracting the windows that exist on all workspaces
+        const isOccupied = !ignoreInactiveOccupiedWorkspaces && workspace.list_windows().length - windowsOnAllWSCount > 0;
+
+        // Get if this is the dynamic workspace
+        const isDynamic = dynamicWorkspacesEnabled && index === workspaceCount - 1;
+
+        // Initial data
+        const styleClasses = ["dotspaces-indicator"];
+        let giconName = "inactive-unoccupied";
+        let giconSize = 14;
+        let buttonReleaseFunc = null;
+
+        // Handle the active state
+        if (workspace.active) {
+            // Add the style class and set the icon name
+            styleClasses.push("active");
+            giconName = "active";
+
+            // Toggle the overview on clicking the active workspace
+            buttonReleaseFunc = () => {
+                if (Main.overview._visible) Main.overview.hide();
+                else Main.overview.show();
+            };
+        } else {
+            // Set the style class and icon name if this workspace is occupied
+            if (isOccupied) {
+                styleClasses.push("occupied");
+                giconName = "inactive-occupied";
+            }
+
+            // Change workspace on clicking the desired workspace
+            buttonReleaseFunc = () => workspace.activate(global.get_current_time());
+        }
+
+        // Set the style class, icon name, and icon size if this is the dynamic workspace
+        if (isDynamic) {
+            styleClasses.push("dynamic");
+            giconName = "dynamic";
+            giconSize = workspace.active ? 12 : 8;
+        }
+
+        return {
+            styleClasses: styleClasses,
+            gicon: this._get_icon(giconName),
+            giconSize: giconSize,
+            buttonReleaseFunc: buttonReleaseFunc,
+        };
     }
 }
