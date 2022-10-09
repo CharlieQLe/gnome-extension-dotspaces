@@ -40,10 +40,22 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
         });
     }
 
+    /**
+     * Create an icon based on the name.
+     * 
+     * @param {string} name 
+     * @returns {Gio.Icon}
+     */
     _get_icon(name) {
         return Gio.icon_new_for_string(`${Me.path}/icons/${name}-symbolic.svg`);
     }
 
+    /**
+     * Handle the scroll event.
+     * 
+     * @param {*} _ 
+     * @param {Clutter.Event} event 
+     */
     _on_scroll(_, event) {
         // Increment or decrement the index
         let index = global.workspace_manager.get_active_workspace_index();
@@ -118,6 +130,7 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
             this._dots.add_actor(this._build_dot(i, dynamicWorkspacesEnabled, workspaceCount, windowsOnAllWSCount));
         }
     }
+
     /*
      * Rebuild the dot indicators.
      */
