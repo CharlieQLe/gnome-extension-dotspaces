@@ -6,6 +6,7 @@
                 <child>
                     <object class="AdwActionRow">
                         <property name="title">Ignore Inactive Occupied Workspaces</property>
+                        <property name="subtitle">If enabled, do not distinguish inactive workspaces that contain windows</property>
                         <property name="activatable-widget">ignore_inactive_occupied_workspaces</property>
                         <child>
                             <object class="GtkSwitch" id="ignore_inactive_occupied_workspaces">
@@ -17,6 +18,7 @@
                 <child>
                     <object class="AdwActionRow">
                         <property name="title">Keep Activities</property>
+                        <property name="subtitle">If enabled, keep the activities button</property>
                         <property name="activatable-widget">keep_activities</property>
                         <child>
                             <object class="GtkSwitch" id="keep_activities">
@@ -28,6 +30,7 @@
                 <child>
                     <object class="AdwActionRow">
                         <property name="title">Switch Workspaces By Panel Scroll</property>
+                        <property name="subtitle">If enabled, switch workspaces by scrolling over the panel</property>
                         <property name="activatable-widget">panel_scroll</property>
                         <child>
                             <object class="GtkSwitch" id="panel_scroll">
@@ -39,9 +42,22 @@
                 <child>
                     <object class="AdwActionRow">
                         <property name="title">Wrap Workspaces</property>
+                        <property name="subtitle">If enabled, switching workspaces can wraparound</property> 
                         <property name="activatable-widget">wrap_workspaces</property>
                         <child>
                             <object class="GtkSwitch" id="wrap_workspaces">
+                                <property name="valign">center</property>
+                            </object>
+                        </child>
+                    </object>
+                </child>
+                <child>
+                    <object class="AdwActionRow">
+                        <property name="title">Hide Dots For Single Workspaces</property>
+                        <property name="subtitle">If enabled, the dot indicators will be hidden if there is only one workspace</property> 
+                        <property name="activatable-widget">hide_dots_on_single</property>
+                        <child>
+                            <object class="GtkSwitch" id="hide_dots_on_single">
                                 <property name="valign">center</property>
                             </object>
                         </child>

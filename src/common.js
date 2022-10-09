@@ -32,6 +32,7 @@ var DotspaceSettings = class DotspaceSettings extends Settings {
     static KEEP_ACTIVITIES = "keep-activities";
     static PANEL_SCROLL = "panel-scroll";
     static WRAP_WORKSPACES = "wrap-workspaces";
+    static HIDE_DOTS_ON_SINGLE = "hide-dots-on-single";
     
     static getNewSchema() {
         const extensionUtils = imports.misc.extensionUtils;
@@ -43,7 +44,8 @@ var DotspaceSettings = class DotspaceSettings extends Settings {
             this.IGNORE_INACTIVE_OCCUPIED_WORKSPACES,
             this.KEEP_ACTIVITIES,
             this.PANEL_SCROLL,
-            this.WRAP_WORKSPACES
+            this.WRAP_WORKSPACES,
+            this.HIDE_DOTS_ON_SINGLE
         ];
     }
     
@@ -67,6 +69,10 @@ var DotspaceSettings = class DotspaceSettings extends Settings {
         return this.getBoolean(DotspaceSettings.WRAP_WORKSPACES);
     }
 
+    get hideDotsOnSingle() {
+        return this.getBoolean(DotspaceSettings.HIDE_DOTS_ON_SINGLE);
+    }
+
     onChangedIgnoreInactiveOccupiedWorkspaces(func) {
         this.onChanged(DotspaceSettings.IGNORE_INACTIVE_OCCUPIED_WORKSPACES, func);
     }
@@ -77,6 +83,10 @@ var DotspaceSettings = class DotspaceSettings extends Settings {
 
     onChangedPanelScroll(func) {
         this.onChanged(DotspaceSettings.PANEL_SCROLL, func);
+    }
+
+    onChangedHideDotsOnSingle(func) {
+        this.onChanged(DotspaceSettings.HIDE_DOTS_ON_SINGLE, func);
     }
 }
 

@@ -1,18 +1,11 @@
+.dotspaces-container {
+  padding-left: 0px;
+  padding-right: 0px;
+  margin-left: 0px;
+  margin-right: 0px;
+}
+
 .dotspaces-indicator {
-  margin-left: 5px;
-  margin-right: 5px;
-}
-
-.dotspaces-indicator:hover {
-  color: gray; 
-}
-
-.dotspaces-indicator.dynamic {
-  margin-left: 8px;
-  margin-right: 8px;
-}
-
-.dotspaces-indicator.active.dynamic {
-  margin-left: 6px;
-  margin-right: 6px;
+  padding-left: 6px;
+  padding-right: 6px;
 }
