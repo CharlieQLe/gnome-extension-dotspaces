@@ -24,7 +24,7 @@ const Main = imports.ui.main;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const Dotspaces = Me.imports.dotspaces;
-const { DotspaceSettings, toggleActivities } = Me.imports.common;
+const { DotspaceSettings } = Me.imports.settings;
 
 class Extension {
     constructor(uuid) {
@@ -65,4 +65,17 @@ class Extension {
 
 function init(meta) {
     return new Extension(meta.uuid);
+}
+
+/**
+ * Toggle the display of the activities button.
+ * 
+ * @param {Boolean} display
+ */
+ function toggleActivities(display) {
+    const activities_button = Main.panel.statusArea['activities'];
+    if (activities_button) {
+        if (display && !Main.sessionMode.isLocked) activities_button.container.show();
+        else activities_button.container.hide();
+    }
 }

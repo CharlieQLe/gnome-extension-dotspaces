@@ -4,7 +4,7 @@ const { Adw, Gio, GLib, Gtk } = imports.gi;
 
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
-const { DotspaceSettings } = Me.imports.common;
+const { DotspaceSettings } = Me.imports.settings;
 
 /**
  * Like `extension.js` this is used for any one-time setup like translations.

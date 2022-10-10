@@ -112,18 +112,3 @@ var MutterSettings = class MutterSettings extends Settings {
         this.onChanged(MutterSettings.DYNAMIC_WORKSPACES, func);
     }
 }
-
-/**
- * 
- * Toggle the display of the activities button.
- * 
- * @param {Boolean} display 
- */
-function toggleActivities(display) {
-    const main = imports.ui.main;
-    const activities_button = main.panel.statusArea['activities'];
-    if (activities_button) {
-        if (display && !main.sessionMode.isLocked) activities_button.container.show();
-        else activities_button.container.hide();
-    }
-}

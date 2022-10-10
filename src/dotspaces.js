@@ -5,7 +5,59 @@ const { Clutter, Gio, GObject, St } = imports.gi;
 const Main = imports.ui.main;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
-const { DotspaceSettings, MutterSettings } = Me.imports.common;
+const { DotspaceSettings, MutterSettings } = Me.imports.settings;
+
+class DotIndicator extends St.Bin {
+    static {
+        GObject.registerClass(this);
+    }
+
+    _init(index, windowsOnAllWSCount, dynamicWorkspacesEnabled, ignoreInactiveOccupiedWorkspaces) {
+        super._init({
+            visible: true,
+            reactive: true,
+            can_focus: false,
+            track_hover: true
+        });
+
+        // Get the workspace to watch
+        this._workspace = global.workspace_manager.get_workspace_by_index(index);
+        
+        // Check if this workspace is occupied
+        const isOccupied = !ignoreInactiveOccupiedWorkspaces && this._workspace.list_windows().length - windowsOnAllWSCount > 0;
+        
+        // Add style classes
+        this.add_style_class_name("panel-button");
+        this.add_style_class_name("dotspaces-indicator");
+        if (isOccupied) this.add_style_class_name("occupied");
+
+        // Default gicon settings
+        let giconName = "inactive-unoccupied";
+        let giconSize = 14;
+
+        // Handle active workspace
+        if (this._workspace.active) {
+            giconName = "active";
+            this.add_style_pseudo_class("active");
+            this.connect('button-release-event', toggleOverview);
+        } else this.connect('button-release-event', this.activate_workspace.bind(this));
+        
+        // Handle dynamic (last if dynamic) workspace
+        if (dynamicWorkspacesEnabled && index === global.workspace_manager.get_n_workspaces() - 1) {
+            this.add_style_class_name("dynamic");
+            giconName = "dynamic";
+            giconSize = 12;
+        }
+
+        // Create the icon  
+        this._icon = new St.Icon({ gicon: Gio.icon_new_for_string(`${Me.path}/icons/${giconName}-symbolic.svg`), icon_size: giconSize });
+        this.set_child(this._icon);
+    }
+
+    activate_workspace() {
+        this._workspace.activate(global.get_current_time());
+    }
+}
 
 var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.Button {
     static {
@@ -81,7 +133,7 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
      */
     _rebuild_dots() {
         // Destroy all dots
-        this._dots.destroy_all_children();
+        this._dots?.destroy_all_children();
 
         // Get settings
         const ignoreInactiveOccupiedWorkspaces = this._dotspaceSettings.ignoreInactiveOccupiedWorkspaces;
@@ -95,63 +147,17 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
         const windowsOnAllWSCount = ignoreInactiveOccupiedWorkspaces ? 0 : global.display.list_all_windows().filter(w => w.is_on_all_workspaces() && w.get_wm_class() !== "Gnome-shell").length;
 
         // Create dots
-        for (let i = 0; i < workspaceCount; i++) {
-            // Create the new workspace indicator
-            const dotIndicator = new St.Bin({ visible: true, reactive: true, can_focus: false, track_hover: true });
-
-            // Get the current workspace
-            const workspace = global.workspace_manager.get_workspace_by_index(i);
-
-            // Check if this workspace is occupied by windows by getting the windows on a workspace then subtracting the windows that exist on all workspaces
-            const isOccupied = !ignoreInactiveOccupiedWorkspaces && workspace.list_windows().length - windowsOnAllWSCount > 0;
-
-            // Get if this is the dynamic workspace
-            const isDynamic = dynamicWorkspacesEnabled && i === workspaceCount - 1;
-
-            // Initial style, icon name, and function
-            dotIndicator.add_style_class_name("panel-button");
-            dotIndicator.add_style_class_name("dotspaces-indicator");
-            let giconName = "inactive-unoccupied";
-            let giconSize = 14;
-
-            // Add the occupied style class
-            if (isOccupied) dotIndicator.add_style_class_name("occupied");
-
-            // Handle the active state
-            if (workspace.active) {
-                // Add the style class and set the icon name
-                dotIndicator.add_style_pseudo_class("active");
-                giconName = "active";
-
-                // Toggle the overview on clicking the active workspace
-                dotIndicator.connect('button-release-event', () => {
-                    if (Main.overview._visible) Main.overview.hide();
-                    else Main.overview.show();
-                });
-            } else {
-                // Set the icon name if this workspace is occupied
-                if (isOccupied) giconName = "inactive-occupied";
-
-                // Change workspace on clicking the desired workspace
-                dotIndicator.connect('button-release-event', () => workspace.activate(global.get_current_time()));
-            }
-
-            // Set the style class, icon name, and icon size if this is the dynamic workspace
-            if (isDynamic) {
-                dotIndicator.add_style_class_name("dynamic");
-                giconName = "dynamic";
-                giconSize = 12;
-            }
-
-            // Create the icon  
-            dotIndicator.icon = new St.Icon({ gicon: Gio.icon_new_for_string(`${Me.path}/icons/${giconName}-symbolic.svg`), icon_size: giconSize });
-            dotIndicator.set_child(dotIndicator.icon);
-
-            // Add actor
-            this._dots.add_actor(dotIndicator);
-        }
-
+        for (let i = 0; i < workspaceCount; i++) this._dots.add_actor(new DotIndicator(i, windowsOnAllWSCount, dynamicWorkspacesEnabled, ignoreInactiveOccupiedWorkspaces));
+        
         // Toggle visibility
         this.visible = !hideDotsOnSingle || (!dynamicWorkspacesEnabled && workspaceCount > 1) || (dynamicWorkspacesEnabled && workspaceCount > 2);
     }
+}
+
+/**
+ * Toggle the overview
+ */
+function toggleOverview() {
+    if (Main.overview._visible) Main.overview.hide();
+    else Main.overview.show();
 }
