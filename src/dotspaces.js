@@ -40,7 +40,10 @@ class DotIndicator extends St.Bin {
             giconName = "active";
             this.add_style_pseudo_class("active");
             this.connect('button-release-event', toggleOverview);
-        } else this.connect('button-release-event', this.activate_workspace.bind(this));
+        } else {
+            if (isOccupied) giconName = "inactive-occupied";
+            this.connect('button-release-event', this.activate_workspace.bind(this));
+        }
         
         // Handle dynamic (last if dynamic) workspace
         if (dynamicWorkspacesEnabled && index === global.workspace_manager.get_n_workspaces() - 1) {
