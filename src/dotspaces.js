@@ -62,25 +62,25 @@ class DotIndicator extends St.Bin {
     }
 }
 
-var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.Button {
+var DotspaceContainer = class DotspaceContainer extends St.BoxLayout {
     static {
         GObject.registerClass(this);
     }
 
     _init() {
-        super._init(0.0, _('DotspaceContainer'));
-        this.track_hover = true;
-
+        super._init({
+            track_hover: true,
+            reactive: true
+        });
+        
         // Get settings
         this._dotspaceSettings = new DotspaceSettings();
         this._mutterSettings = new MutterSettings();
         
         // Create the box to hold the dots 
-	    this._dots = new St.BoxLayout({});
-        this._dots.add_style_class_name("dotspaces-container");
-        this._dots.add_style_class_name("panel-button");
-        this.add_child(this._dots);
-
+        this.add_style_class_name("panel-button");
+	    this.add_style_class_name("dotspaces-container");
+        
         // Handle scroll event
         const scrollEventSource = this._dotspaceSettings.panelScroll ? Main.panel : this;
         this._scrollEventId = scrollEventSource.connect("scroll-event", this._on_scroll.bind(this));
@@ -99,7 +99,7 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
             if (this._activeWorkspaceChangedId) global.workspace_manager.disconnect(this._activeWorkspaceChangedId);
             if (this._notifyNWorkspacesId) global.workspace_manager.disconnect(this._notifyNWorkspacesId);
             if (this._scrollEventId) scrollEventSource.disconnect(this._scrollEventId);
-            this._dots.destroy();
+            this.destroy();
         });
 
         // Rebuild dots
@@ -136,7 +136,7 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
      */
     _rebuild_dots() {
         // Destroy all dots
-        this._dots?.destroy_all_children();
+        this.destroy_all_children();
 
         // Get settings
         const ignoreInactiveOccupiedWorkspaces = this._dotspaceSettings.ignoreInactiveOccupiedWorkspaces;
@@ -150,7 +150,7 @@ var DotspaceContainer = class DotspaceContainer extends imports.ui.panelMenu.But
         const windowsOnAllWSCount = ignoreInactiveOccupiedWorkspaces ? 0 : global.display.list_all_windows().filter(w => w.is_on_all_workspaces() && w.get_wm_class() !== "Gnome-shell").length;
 
         // Create dots
-        for (let i = 0; i < workspaceCount; i++) this._dots.add_actor(new DotIndicator(i, windowsOnAllWSCount, dynamicWorkspacesEnabled, ignoreInactiveOccupiedWorkspaces));
+        for (let i = 0; i < workspaceCount; i++) this.add_actor(new DotIndicator(i, windowsOnAllWSCount, dynamicWorkspacesEnabled, ignoreInactiveOccupiedWorkspaces));
         
         // Toggle visibility
         this.visible = !hideDotsOnSingle || (!dynamicWorkspacesEnabled && workspaceCount > 1) || (dynamicWorkspacesEnabled && workspaceCount > 2);

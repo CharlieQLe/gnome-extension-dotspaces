@@ -44,6 +44,7 @@ class Extension {
 
     disable() {
         if (this._dotspaces) {
+            Main.panel._leftBox.remove_child(this._dotspaces);
             this._dotspaces.destroy();
             this._dotspaces = null;
         }
@@ -59,7 +60,7 @@ class Extension {
             toggleActivities(true);
             position = 1;
         } else toggleActivities(false);
-        Main.panel.addToStatusArea(this._uuid, this._dotspaces, position, 'left');
+        Main.panel._leftBox.insert_child_at_index(this._dotspaces, position);
     }
 }
 
