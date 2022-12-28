@@ -65,7 +65,7 @@ class DotIndicator extends St.Bin {
     update() {
         // Check if this workspace is occupied
         const isOccupied = !this._settings.ignoreInactiveOccupiedWorkspaces && this._window_count - get_pinned_windows() > 0;
-        
+
         // Add style classes
         if (isOccupied) this.add_style_class_name("occupied");
         else this.remove_style_class_name("occupied")
@@ -132,11 +132,15 @@ var DotspaceContainer = class DotspaceContainer extends St.BoxLayout {
         
         // Handle workspace events
         this._notifyNWorkspacesId = global.workspace_manager.connect("notify::n-workspaces", this._rebuild_dots.bind(this));
+        this._windowEnteredMonitorSignal = global.display.connect('window-entered-monitor', (_, __) => this._rebuild_dots());
+        this._windowLeftMonitorSignal = global.display.connect('window-left-monitor', (_, __) => this._rebuild_dots());
 
         // Handle destroy event
         this.connect("destroy", () => {
             if (this._notifyNWorkspacesId) global.workspace_manager.disconnect(this._notifyNWorkspacesId);
             if (this._scrollEventId) scrollEventSource.disconnect(this._scrollEventId);
+            if (this._windowEnteredMonitorSignal) global.display.disconnect(this._windowEnteredMonitorSignal);
+            if (this._windowLeftMonitorSignal) global.display.disconnect(this._windowLeftMonitorSignal);
             this.destroy();
         });
 
