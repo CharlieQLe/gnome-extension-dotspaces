@@ -7,29 +7,69 @@ const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const { DotspaceSettings, MutterSettings } = Me.imports.settings;
 
+function get_pinned_windows() {
+    return global.display.list_all_windows().filter(w => w.is_on_all_workspaces() && w.get_wm_class() !== "Gnome-shell").length;
+}
+
 class DotIndicator extends St.Bin {
     static {
         GObject.registerClass(this);
     }
 
-    _init(index, windowsOnAllWSCount, dynamicWorkspacesEnabled, ignoreInactiveOccupiedWorkspaces) {
+    _init(index, settings) {
         super._init({
             visible: true,
             reactive: true,
             can_focus: false,
             track_hover: true
-        });
+        });        
+
+        // Set the settings
+        this._settings = settings;
 
         // Get the workspace to watch
         this._workspace = global.workspace_manager.get_workspace_by_index(index);
-        
-        // Check if this workspace is occupied
-        const isOccupied = !ignoreInactiveOccupiedWorkspaces && this._workspace.list_windows().length - windowsOnAllWSCount > 0;
-        
+        this._window_count = this._workspace.list_windows().length;
+        print(this._window_count)
+
+        // Set the icon
+        this._icon = null;
+
         // Add style classes
         this.add_style_class_name("panel-button");
         this.add_style_class_name("dotspaces-indicator");
+
+        // Signals
+        this.connect('destroy', () => {
+            if (this.notify_active_signal) this._workspace.disconnect(this.notify_active_signal);
+            if (this.window_added_signal) this._workspace.disconnect(this.window_added_signal);
+            if (this.window_removed_signal) this._workspace.disconnect(this.window_removed_signal);
+        });
+        this.window_added_signal = this._workspace.connect('window-added', _ => {
+            this._window_count++;
+            this.update();
+        });
+        this.window_removed_signal = this._workspace.connect('window-removed', _ => {
+            this._window_count--;
+            this.update();
+        });
+        this.notify_active_signal = this._workspace.connect('notify::active', this.update.bind(this));
+
+        // Update icons
+        this.update(null);
+    }
+
+    activate_workspace() {
+        this._workspace.activate(global.get_current_time());
+    }
+
+    update() {
+        // Check if this workspace is occupied
+        const isOccupied = !this._settings.ignoreInactiveOccupiedWorkspaces && this._window_count - get_pinned_windows() > 0;
+        
+        // Add style classes
         if (isOccupied) this.add_style_class_name("occupied");
+        else this.remove_style_class_name("occupied")
 
         // Default gicon settings
         let giconName = "inactive-unoccupied";
@@ -46,19 +86,18 @@ class DotIndicator extends St.Bin {
         }
         
         // Handle dynamic (last if dynamic) workspace
-        if (dynamicWorkspacesEnabled && index === global.workspace_manager.get_n_workspaces() - 1) {
+        if (this._settings.dynamicWorkspaces && index === global.workspace_manager.get_n_workspaces() - 1) {
             this.add_style_class_name("dynamic");
             giconName = "dynamic";
             giconSize = 12;
         }
 
-        // Create the icon  
-        this._icon = new St.Icon({ gicon: Gio.icon_new_for_string(`${Me.path}/icons/${giconName}-symbolic.svg`), icon_size: giconSize });
-        this.set_child(this._icon);
-    }
-
-    activate_workspace() {
-        this._workspace.activate(global.get_current_time());
+        // Create or set the icon  
+        const gicon = Gio.Icon.new_for_string(`${Me.path}/icons/${giconName}-symbolic.svg`);
+        if (this._icon == null) {
+            this._icon = new St.Icon({ gicon: gicon, icon_size: giconSize });
+            this.set_child(this._icon);
+        } else this._icon.set_gicon(gicon);
     }
 }
 
@@ -72,6 +111,8 @@ var DotspaceContainer = class DotspaceContainer extends St.BoxLayout {
             track_hover: true,
             reactive: true
         });
+
+        this._dots = [];
         
         // Get settings
         this._dotspaceSettings = new DotspaceSettings();
@@ -91,12 +132,10 @@ var DotspaceContainer = class DotspaceContainer extends St.BoxLayout {
         this._mutterSettings.onChangedDynamicWorkspaces(this._rebuild_dots.bind(this));
         
         // Handle workspace events
-        this._activeWorkspaceChangedId = global.workspace_manager.connect("active-workspace-changed", this._rebuild_dots.bind(this));
         this._notifyNWorkspacesId = global.workspace_manager.connect("notify::n-workspaces", this._rebuild_dots.bind(this));
 
         // Handle destroy event
         this.connect("destroy", () => {
-            if (this._activeWorkspaceChangedId) global.workspace_manager.disconnect(this._activeWorkspaceChangedId);
             if (this._notifyNWorkspacesId) global.workspace_manager.disconnect(this._notifyNWorkspacesId);
             if (this._scrollEventId) scrollEventSource.disconnect(this._scrollEventId);
             this.destroy();
@@ -137,23 +176,23 @@ var DotspaceContainer = class DotspaceContainer extends St.BoxLayout {
     _rebuild_dots() {
         // Destroy all dots
         this.destroy_all_children();
+        this._dots = []
 
         // Get settings
-        const ignoreInactiveOccupiedWorkspaces = this._dotspaceSettings.ignoreInactiveOccupiedWorkspaces;
-        const hideDotsOnSingle = this._dotspaceSettings.hideDotsOnSingle;
         const dynamicWorkspacesEnabled = this._mutterSettings.dynamicWorkspaces;
         
         // Update workspace information
         const workspaceCount = global.workspace_manager.get_n_workspaces();
 
-        // Get the number of windows that are on all workspaces
-        const windowsOnAllWSCount = ignoreInactiveOccupiedWorkspaces ? 0 : global.display.list_all_windows().filter(w => w.is_on_all_workspaces() && w.get_wm_class() !== "Gnome-shell").length;
-
         // Create dots
-        for (let i = 0; i < workspaceCount; i++) this.add_actor(new DotIndicator(i, windowsOnAllWSCount, dynamicWorkspacesEnabled, ignoreInactiveOccupiedWorkspaces));
-        
+        for (let i = 0; i < workspaceCount; i++) {
+            const dot = new DotIndicator(i, this._dotspaceSettings);
+            this.add_actor(dot);
+            this._dots.push(dot);
+        }
+
         // Toggle visibility
-        this.visible = !hideDotsOnSingle || (!dynamicWorkspacesEnabled && workspaceCount > 1) || (dynamicWorkspacesEnabled && workspaceCount > 2);
+        this.visible = !this._dotspaceSettings.hideDotsOnSingle || (!dynamicWorkspacesEnabled && workspaceCount > 1) || (dynamicWorkspacesEnabled && workspaceCount > 2);
     }
 }
 
