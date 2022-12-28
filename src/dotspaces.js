@@ -30,7 +30,6 @@ class DotIndicator extends St.Bin {
         // Get the workspace to watch
         this._workspace = global.workspace_manager.get_workspace_by_index(index);
         this._window_count = this._workspace.list_windows().length;
-        print(this._window_count)
 
         // Set the icon
         this._icon = null;
@@ -56,7 +55,7 @@ class DotIndicator extends St.Bin {
         this.notify_active_signal = this._workspace.connect('notify::active', this.update.bind(this));
 
         // Update icons
-        this.update(null);
+        this.update();
     }
 
     activate_workspace() {
