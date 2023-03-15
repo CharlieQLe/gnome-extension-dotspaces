@@ -7,10 +7,6 @@ const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const { DotspaceSettings, MutterSettings } = Me.imports.settings;
 
-function get_pinned_windows() {
-    return global.display.list_all_windows().filter(w => w.is_on_all_workspaces() && w.get_wm_class() !== "Gnome-shell").length;
-}
-
 class DotIndicator extends St.Bin {
     static {
         GObject.registerClass(this);
@@ -29,7 +25,7 @@ class DotIndicator extends St.Bin {
 
         // Get the workspace to watch
         this._workspace = global.workspace_manager.get_workspace_by_index(index);
-        this._window_count = this._workspace.list_windows().length;
+        this._windowCount = this._workspace.list_windows().filter(w => !w.is_on_all_workspaces() && !w.is_skip_taskbar()).length;
 
         // Set the icon
         this._icon = null;
@@ -44,31 +40,29 @@ class DotIndicator extends St.Bin {
             if (this.window_added_signal) this._workspace.disconnect(this.window_added_signal);
             if (this.window_removed_signal) this._workspace.disconnect(this.window_removed_signal);
         });
-        this.window_added_signal = this._workspace.connect('window-added', _ => {
-            this._window_count++;
-            this.update();
+        this.window_added_signal = this._workspace.connect_after('window-added', (_, window) => {
+            if (window.is_on_all_workspaces() || window.is_skip_taskbar()) return;
+            this._windowCount++;
+            this.Update();
         });
-        this.window_removed_signal = this._workspace.connect('window-removed', _ => {
-            this._window_count--;
-            this.update();
+        this.window_removed_signal = this._workspace.connect_after('window-removed', (_, window) => {
+            if (window.is_on_all_workspaces() || window.is_skip_taskbar()) return;
+            this._windowCount--;
+            this.Update();
         });
-        this.notify_active_signal = this._workspace.connect('notify::active', this.update.bind(this));
+        this.notify_active_signal = this._workspace.connect_after('notify::active', this.Update.bind(this));
 
         // Update icons
-        this.update();
+        this.Update();
     }
 
-    activate_workspace() {
-        this._workspace.activate(global.get_current_time());
-    }
-
-    update() {
+    Update() {
         // Check if this workspace is occupied
-        const isOccupied = !this._settings.ignoreInactiveOccupiedWorkspaces && this._window_count - get_pinned_windows() > 0;
+        const isOccupied = !this._settings.ignoreInactiveOccupiedWorkspaces && this._windowCount > 0;
 
         // Add style classes
         if (isOccupied) this.add_style_class_name("occupied");
-        else this.remove_style_class_name("occupied")
+        else this.remove_style_class_name("occupied");
 
         // Default gicon settings
         let giconName = "inactive-unoccupied";
@@ -78,10 +72,13 @@ class DotIndicator extends St.Bin {
         if (this._workspace.active) {
             giconName = "active";
             this.add_style_pseudo_class("active");
-            this.connect('button-release-event', toggleOverview);
+            this.connect('button-release-event', () => {
+                if (Main.overview._visible) Main.overview.hide();
+                else Main.overview.show();
+            });
         } else {
             if (isOccupied) giconName = "inactive-occupied";
-            this.connect('button-release-event', this.activate_workspace.bind(this));
+            this.connect('button-release-event', () => this._workspace.activate(global.get_current_time()));
         }
         
         // Handle dynamic (last if dynamic) workspace
@@ -89,7 +86,7 @@ class DotIndicator extends St.Bin {
             this.add_style_class_name("dynamic");
             giconName = "dynamic";
             giconSize = 12;
-        }
+        } else this.remove_style_class_name("dynamic");
 
         // Create or set the icon  
         const gicon = Gio.Icon.new_for_string(`${Me.path}/icons/${giconName}-symbolic.svg`);
@@ -123,29 +120,24 @@ var DotspaceContainer = class DotspaceContainer extends St.BoxLayout {
         
         // Handle scroll event
         const scrollEventSource = this._dotspaceSettings.panelScroll ? Main.panel : this;
-        this._scrollEventId = scrollEventSource.connect("scroll-event", this._on_scroll.bind(this));
+        this._scrollEventId = scrollEventSource.connect("scroll-event", this._OnScroll.bind(this));
 
         // Handle setting events
-        this._dotspaceSettings.onChangedIgnoreInactiveOccupiedWorkspaces(this._rebuild_dots.bind(this));
-        this._dotspaceSettings.onChangedHideDotsOnSingle(this._rebuild_dots.bind(this));
-        this._mutterSettings.onChangedDynamicWorkspaces(this._rebuild_dots.bind(this));
+        this._dotspaceSettings.onChangedIgnoreInactiveOccupiedWorkspaces(this._RebuildDots.bind(this));
+        this._dotspaceSettings.onChangedHideDotsOnSingle(this._RebuildDots.bind(this));
+        this._mutterSettings.onChangedDynamicWorkspaces(this._RebuildDots.bind(this));
         
         // Handle workspace events
-        this._notifyNWorkspacesId = global.workspace_manager.connect("notify::n-workspaces", this._rebuild_dots.bind(this));
-        this._windowEnteredMonitorSignal = global.display.connect('window-entered-monitor', (_, __) => this._rebuild_dots());
-        this._windowLeftMonitorSignal = global.display.connect('window-left-monitor', (_, __) => this._rebuild_dots());
+        this._notifyNWorkspacesId = global.workspace_manager.connect_after("notify::n-workspaces", this._RebuildDots.bind(this));
 
         // Handle destroy event
         this.connect("destroy", () => {
             if (this._notifyNWorkspacesId) global.workspace_manager.disconnect(this._notifyNWorkspacesId);
             if (this._scrollEventId) scrollEventSource.disconnect(this._scrollEventId);
-            if (this._windowEnteredMonitorSignal) global.display.disconnect(this._windowEnteredMonitorSignal);
-            if (this._windowLeftMonitorSignal) global.display.disconnect(this._windowLeftMonitorSignal);
-            this.destroy();
         });
 
         // Rebuild dots
-	    this._rebuild_dots();
+	    this._RebuildDots();
     }
 
     /**
@@ -154,7 +146,7 @@ var DotspaceContainer = class DotspaceContainer extends St.BoxLayout {
      * @param {*} _ 
      * @param {Clutter.Event} event 
      */
-    _on_scroll(_, event) {
+    _OnScroll(_, event) {
         // Increment or decrement the index
         let index = global.workspace_manager.get_active_workspace_index();
         switch (event.get_scroll_direction()) {
@@ -176,7 +168,7 @@ var DotspaceContainer = class DotspaceContainer extends St.BoxLayout {
     /*
      * Rebuild the dot indicators.
      */
-    _rebuild_dots() {
+    _RebuildDots() {
         // Destroy all dots
         this.destroy_all_children();
         this._dots = []
@@ -197,12 +189,4 @@ var DotspaceContainer = class DotspaceContainer extends St.BoxLayout {
         // Toggle visibility
         this.visible = !this._dotspaceSettings.hideDotsOnSingle || (!dynamicWorkspacesEnabled && workspaceCount > 1) || (dynamicWorkspacesEnabled && workspaceCount > 2);
     }
-}
-
-/**
- * Toggle the overview
- */
-function toggleOverview() {
-    if (Main.overview._visible) Main.overview.hide();
-    else Main.overview.show();
 }

@@ -48,7 +48,7 @@ class Extension {
             this._dotspaces.destroy();
             this._dotspaces = null;
         }
-        toggleActivities(true);
+        ToggleActivities(true);
         this._dotspaceSettings = null;
     }
 
@@ -57,9 +57,9 @@ class Extension {
         this._dotspaces = new Dotspaces.DotspaceContainer();
         let position = 0;
         if (this._dotspaceSettings.keepActivities) {
-            toggleActivities(true);
+            ToggleActivities(true);
             position = 1;
-        } else toggleActivities(false);
+        } else ToggleActivities(false);
         Main.panel._leftBox.insert_child_at_index(this._dotspaces, position);
     }
 }
@@ -73,7 +73,7 @@ function init(meta) {
  * 
  * @param {Boolean} display
  */
- function toggleActivities(display) {
+ function ToggleActivities(display) {
     const activities_button = Main.panel.statusArea['activities'];
     if (activities_button) {
         if (display && !Main.sessionMode.isLocked) activities_button.container.show();
