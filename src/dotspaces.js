@@ -25,7 +25,7 @@ class DotIndicator extends St.Bin {
 
         // Get the workspace to watch
         this._workspace = global.workspace_manager.get_workspace_by_index(index);
-        this._windowCount = this._workspace.list_windows().filter(w => !w.is_on_all_workspaces() && !w.is_skip_taskbar()).length;
+        this._windowCount = this._workspace.list_windows().length;
 
         // Set the icon
         this._icon = null;
@@ -41,12 +41,10 @@ class DotIndicator extends St.Bin {
             if (this.window_removed_signal) this._workspace.disconnect(this.window_removed_signal);
         });
         this.window_added_signal = this._workspace.connect_after('window-added', (_, window) => {
-            if (window.is_on_all_workspaces() || window.is_skip_taskbar()) return;
             this._windowCount++;
             this.Update();
         });
         this.window_removed_signal = this._workspace.connect_after('window-removed', (_, window) => {
-            if (window.is_on_all_workspaces() || window.is_skip_taskbar()) return;
             this._windowCount--;
             this.Update();
         });
@@ -58,7 +56,7 @@ class DotIndicator extends St.Bin {
 
     Update() {
         // Check if this workspace is occupied
-        const isOccupied = !this._settings.ignoreInactiveOccupiedWorkspaces && this._windowCount > 0;
+        const isOccupied = !this._settings.ignoreInactiveOccupiedWorkspaces && this._windowCount - this._workspace.list_windows().filter(w => w.is_on_all_workspaces() || w.is_skip_taskbar()).length > 0;
 
         // Add style classes
         if (isOccupied) this.add_style_class_name("occupied");
