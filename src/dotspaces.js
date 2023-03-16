@@ -25,7 +25,6 @@ class DotIndicator extends St.Bin {
 
         // Get the workspace to watch
         this._workspace = global.workspace_manager.get_workspace_by_index(index);
-        this._windowCount = this._workspace.list_windows().length;
 
         // Set the icon
         this._icon = null;
@@ -36,27 +35,22 @@ class DotIndicator extends St.Bin {
 
         // Signals
         this.connect('destroy', () => {
-            if (this.notify_active_signal) this._workspace.disconnect(this.notify_active_signal);
-            if (this.window_added_signal) this._workspace.disconnect(this.window_added_signal);
-            if (this.window_removed_signal) this._workspace.disconnect(this.window_removed_signal);
+            if (this._notifyActiveSignal) this._workspace.disconnect(this._notifyActiveSignal);
+            if (this._notifyNWindowsSignal) this._workspace.disconnect(this._notifyNWindowsSignal);
         });
-        this.window_added_signal = this._workspace.connect_after('window-added', (_, window) => {
-            this._windowCount++;
-            this.Update();
-        });
-        this.window_removed_signal = this._workspace.connect_after('window-removed', (_, window) => {
-            this._windowCount--;
-            this.Update();
-        });
-        this.notify_active_signal = this._workspace.connect_after('notify::active', this.Update.bind(this));
+        this._notifyNWindowsSignal = this._workspace.connect_after('notify::n-windows', _ => this.Update());
+        this._notifyActiveSignal = this._workspace.connect_after('notify::active', this.Update.bind(this));
 
         // Update icons
         this.Update();
     }
 
     Update() {
+        if (this._buttonSignal) this.disconnect(this._buttonSignal);
+
         // Check if this workspace is occupied
-        const isOccupied = !this._settings.ignoreInactiveOccupiedWorkspaces && this._windowCount - this._workspace.list_windows().filter(w => w.is_on_all_workspaces() || w.is_skip_taskbar()).length > 0;
+        const invalidWindowCount = this._workspace.list_windows().filter(w => w.is_on_all_workspaces() || w.is_skip_taskbar()).length;
+        const isOccupied = !this._settings.ignoreInactiveOccupiedWorkspaces && this._workspace.n_windows - invalidWindowCount > 0;
 
         // Add style classes
         if (isOccupied) this.add_style_class_name("occupied");
@@ -70,13 +64,14 @@ class DotIndicator extends St.Bin {
         if (this._workspace.active) {
             giconName = "active";
             this.add_style_pseudo_class("active");
-            this.connect('button-release-event', () => {
+            this._buttonSignal = this.connect('button-release-event', () => {
                 if (Main.overview._visible) Main.overview.hide();
                 else Main.overview.show();
             });
         } else {
             if (isOccupied) giconName = "inactive-occupied";
-            this.connect('button-release-event', () => this._workspace.activate(global.get_current_time()));
+            this.remove_style_pseudo_class("active");
+            this._buttonSignal = this.connect('button-release-event', () => this._workspace.activate(global.get_current_time()));
         }
         
         // Handle dynamic (last if dynamic) workspace
