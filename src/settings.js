@@ -22,7 +22,15 @@ var Settings = class Settings {
     setBoolean(key, value) { 
         this._schema.set_boolean(key, value); 
     }
-}
+
+    getInt(key) {
+        return this._schema.get_int(key);
+    }
+
+    setInt(key, value) {
+        this._schema.set_int(key, value);
+    }
+};
 
 /**
  * Handles settings for this extension.
@@ -33,7 +41,8 @@ var DotspaceSettings = class DotspaceSettings extends Settings {
     static PANEL_SCROLL = "panel-scroll";
     static WRAP_WORKSPACES = "wrap-workspaces";
     static HIDE_DOTS_ON_SINGLE = "hide-dots-on-single";
-    
+    static WS_INDICATOR_PADDING = "ws-indicator-padding";
+
     static getNewSchema() {
         const extensionUtils = imports.misc.extensionUtils;
         return extensionUtils.getSettings(extensionUtils.getCurrentExtension().metadata['settings-schema']);
@@ -45,7 +54,8 @@ var DotspaceSettings = class DotspaceSettings extends Settings {
             this.KEEP_ACTIVITIES,
             this.PANEL_SCROLL,
             this.WRAP_WORKSPACES,
-            this.HIDE_DOTS_ON_SINGLE
+            this.HIDE_DOTS_ON_SINGLE,
+            this.WS_INDICATOR_PADDING,
         ];
     }
     
@@ -73,6 +83,10 @@ var DotspaceSettings = class DotspaceSettings extends Settings {
         return this.getBoolean(DotspaceSettings.HIDE_DOTS_ON_SINGLE);
     }
 
+    get wsIndicatorPadding() {
+        return this.getInt(DotspaceSettings.WS_INDICATOR_PADDING);
+    }
+
     onChangedIgnoreInactiveOccupiedWorkspaces(func) {
         this.onChanged(DotspaceSettings.IGNORE_INACTIVE_OCCUPIED_WORKSPACES, func);
     }
@@ -88,7 +102,11 @@ var DotspaceSettings = class DotspaceSettings extends Settings {
     onChangedHideDotsOnSingle(func) {
         this.onChanged(DotspaceSettings.HIDE_DOTS_ON_SINGLE, func);
     }
-}
+
+    onChangedWsIndicatorPadding(func) {
+        this.onChanged(DotspaceSettings.WS_INDICATOR_PADDING, func);
+    }
+};
 
 /**
  * Handles settings for Mutter.

@@ -29,9 +29,11 @@ class DotIndicator extends St.Bin {
         // Set the icon
         this._icon = null;
 
-        // Add style classes
+        // Add styles
         this.add_style_class_name("panel-button");
         this.add_style_class_name("dotspaces-indicator");
+        this.set_style(`padding-left: ${this._settings.wsIndicatorPadding}px;`
+            + `padding-right: ${this._settings.wsIndicatorPadding}px;`);
 
         // Signals
         this.connect('destroy', () => {
@@ -118,6 +120,7 @@ var DotspaceContainer = class DotspaceContainer extends St.BoxLayout {
         // Handle setting events
         this._dotspaceSettings.onChangedIgnoreInactiveOccupiedWorkspaces(this._RebuildDots.bind(this));
         this._dotspaceSettings.onChangedHideDotsOnSingle(this._RebuildDots.bind(this));
+        this._dotspaceSettings.onChangedWsIndicatorPadding(this._RebuildDots.bind(this));
         this._mutterSettings.onChangedDynamicWorkspaces(this._RebuildDots.bind(this));
         
         // Handle workspace events

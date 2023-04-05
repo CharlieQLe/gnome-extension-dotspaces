@@ -1,8 +1,3 @@
-.dotspaces-indicator {
-  padding-left: 6px;
-  padding-right: 6px;
-}
-
 .dotspaces-indicator:active {
   box-shadow: none;
 }
