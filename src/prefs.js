@@ -35,6 +35,16 @@ function fillPreferencesWindow(window) {
     // Bind settings to switches
     DotspaceSettings.getKeys().forEach(key => {
         const widget = builder.get_object(key.replaceAll('-', '_'));
-        dotspaceSettings.bind(key, widget, 'active', Gio.SettingsBindFlags.DEFAULT);
+        switch (key) {
+            case DotspaceSettings.WS_INDICATOR_PADDING:
+                widget.set_value(dotspaceSettings.get_int(key));
+                widget.connect('value-changed', (w) => {
+                    dotspaceSettings.set_int(key, w.get_value());
+                });
+                break;
+            default:
+                dotspaceSettings.bind(key, widget, 'active', Gio.SettingsBindFlags.DEFAULT);
+                break;
+        }
     });
 }

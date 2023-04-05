@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
+    <object class="GtkAdjustment" id="ws_indicator_padding_adjustment">
+        <property name="lower">0</property>
+        <property name="upper">30</property>
+        <property name="step_increment">1</property>
+    </object>
+
     <object class="AdwPreferencesPage" id="general">
         <child>
             <object class="AdwPreferencesGroup">
@@ -59,6 +65,18 @@
                         <child>
                             <object class="GtkSwitch" id="hide_dots_on_single">
                                 <property name="valign">center</property>
+                            </object>
+                        </child>
+                    </object>
+                </child>
+                <child>
+                    <object class="AdwActionRow">
+                        <property name="title">Workspace indicator padding</property>
+                        <property name="subtitle">Distance between workspace indicators</property>
+                        <child>
+                            <object class="GtkSpinButton" id="ws_indicator_padding">
+                                <property name="valign">center</property>
+                                <property name="adjustment">ws_indicator_padding_adjustment</property>
                             </object>
                         </child>
                     </object>

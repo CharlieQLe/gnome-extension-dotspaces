@@ -16,5 +16,8 @@
         <key name="hide-dots-on-single" type="b">
             <default>false</default>
         </key>
+        <key name="ws-indicator-padding" type="i">
+            <default>6</default>
+        </key>
     </schema>
 </schemalist>
