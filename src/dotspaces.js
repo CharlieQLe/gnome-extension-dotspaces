@@ -12,16 +12,18 @@ class DotIndicator extends St.Bin {
         GObject.registerClass(this);
     }
 
-    _init(index, settings) {
+    _init(index, dotspaceSettings, mutterSettings) {
         super._init({
             visible: true,
             reactive: true,
             can_focus: false,
             track_hover: true
-        });        
+        });
+        this._index = index;
 
         // Set the settings
-        this._settings = settings;
+        this._dotspaceSettings = dotspaceSettings;
+        this._mutterSettings = mutterSettings;
 
         // Get the workspace to watch
         this._workspace = global.workspace_manager.get_workspace_by_index(index);
@@ -32,8 +34,8 @@ class DotIndicator extends St.Bin {
         // Add styles
         this.add_style_class_name("panel-button");
         this.add_style_class_name("dotspaces-indicator");
-        this.set_style(`padding-left: ${this._settings.wsIndicatorPadding}px;`
-            + `padding-right: ${this._settings.wsIndicatorPadding}px;`);
+        this.set_style(`padding-left: ${this._dotspaceSettings.wsIndicatorPadding}px;`
+            + `padding-right: ${this._dotspaceSettings.wsIndicatorPadding}px;`);
 
         // Signals
         this.connect('destroy', () => {
@@ -52,7 +54,7 @@ class DotIndicator extends St.Bin {
 
         // Check if this workspace is occupied
         const invalidWindowCount = this._workspace.list_windows().filter(w => w.is_on_all_workspaces() || w.is_skip_taskbar()).length;
-        const isOccupied = !this._settings.ignoreInactiveOccupiedWorkspaces && this._workspace.n_windows - invalidWindowCount > 0;
+        const isOccupied = !this._dotspaceSettings.ignoreInactiveOccupiedWorkspaces && this._workspace.n_windows - invalidWindowCount > 0;
 
         // Add style classes
         if (isOccupied) this.add_style_class_name("occupied");
@@ -77,7 +79,7 @@ class DotIndicator extends St.Bin {
         }
         
         // Handle dynamic (last if dynamic) workspace
-        if (this._settings.dynamicWorkspaces && index === global.workspace_manager.get_n_workspaces() - 1) {
+        if (this._mutterSettings.dynamicWorkspaces && this._index === global.workspace_manager.get_n_workspaces() - 1) {
             this.add_style_class_name("dynamic");
             giconName = "dynamic";
             giconSize = 12;
@@ -177,7 +179,7 @@ var DotspaceContainer = class DotspaceContainer extends St.BoxLayout {
 
         // Create dots
         for (let i = 0; i < workspaceCount; i++) {
-            const dot = new DotIndicator(i, this._dotspaceSettings);
+            const dot = new DotIndicator(i, this._dotspaceSettings, this._mutterSettings);
             this.add_actor(dot);
             this._dots.push(dot);
         }
