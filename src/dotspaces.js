@@ -1,6 +1,6 @@
 'use strict';
 
-const { Clutter, Gio, GObject, St } = imports.gi;
+const { Clutter, Gio, GLib, GObject, St } = imports.gi;
 
 const Main = imports.ui.main;
 const ExtensionUtils = imports.misc.extensionUtils;
@@ -42,14 +42,19 @@ class DotIndicator extends St.Bin {
             if (this._notifyActiveSignal) this._workspace.disconnect(this._notifyActiveSignal);
             if (this._notifyNWindowsSignal) this._workspace.disconnect(this._notifyNWindowsSignal);
         });
-        this._notifyNWindowsSignal = this._workspace.connect_after('notify::n-windows', _ => this.Update());
-        this._notifyActiveSignal = this._workspace.connect_after('notify::active', this.Update.bind(this));
+        this._notifyNWindowsSignal = this._workspace.connect_after('notify::n-windows', () => {
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1, () => {
+                this.update();
+                return GLib.SOURCE_REMOVE;
+            });
+        });
+        this._notifyActiveSignal = this._workspace.connect_after('notify::active', this.update.bind(this));
 
         // Update icons
-        this.Update();
+        this.update();
     }
 
-    Update() {
+    update() {
         if (this._buttonSignal) this.disconnect(this._buttonSignal);
 
         // Check if this workspace is occupied
